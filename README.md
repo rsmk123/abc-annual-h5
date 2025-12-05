@@ -55,19 +55,40 @@
 bun install
 ```
 
-### 开发环境
+### 开发环境（支持多端口）
 
 ```bash
+# 默认端口 3000
 bun dev
+
+# 指定端口 3001
+bun run dev:3001
+
+# 指定端口 3002
+bun run dev:3002
+
+# 指定端口 3003
+bun run dev:3003
+
+# 自动选择可用端口
+bun run dev:auto
+
+# 或使用命令行参数指定任意端口
+bun dev -- -p 4000
 ```
 
-访问: http://localhost:3000
+**推荐**：如果3000端口被占用，使用 `bun run dev:3001`
+
+访问: http://localhost:3000 (或你指定的端口)
 
 ### 生产构建
 
 ```bash
 bun run build
 bun start
+
+# 指定生产端口
+bun run start:3001
 ```
 
 ## 项目结构
