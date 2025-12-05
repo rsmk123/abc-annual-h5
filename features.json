@@ -1,0 +1,468 @@
+{
+  "metadata": {
+    "project": "ABC银行开门红集五福活动H5",
+    "version": "1.0.0",
+    "lastUpdated": "2025-12-05",
+    "totalFeatures": 45,
+    "completedFeatures": 0,
+    "testCoverage": "0%"
+  },
+  "rules": {
+    "CRITICAL": "AI代理只能修改 'passes' 字段，禁止删除或修改其他任何字段",
+    "testBefore": "修改 passes=true 之前必须运行对应的测试",
+    "noSkipping": "不允许跳过失败的测试",
+    "oneAtATime": "一次只处理一个功能，完成后再选下一个"
+  },
+  "features": [
+    {
+      "id": "LOGIN-001",
+      "category": "登录系统",
+      "description": "页面加载时自动弹出登录弹窗",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": [],
+      "testCommand": "bun test:e2e login-001"
+    },
+    {
+      "id": "LOGIN-002",
+      "category": "登录系统",
+      "description": "手机号输入框接受11位数字",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-001"],
+      "testCommand": "bun test:e2e login-002"
+    },
+    {
+      "id": "LOGIN-003",
+      "category": "登录系统",
+      "description": "手机号输入框限制最大长度为11位",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-002"],
+      "testCommand": "bun test:e2e login-003"
+    },
+    {
+      "id": "LOGIN-004",
+      "category": "登录系统",
+      "description": "验证码输入框存在且可输入",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-001"],
+      "testCommand": "bun test:e2e login-004"
+    },
+    {
+      "id": "LOGIN-005",
+      "category": "登录系统",
+      "description": "点击'获取验证码'按钮显示提示: 模拟验证码 8888",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-004"],
+      "testCommand": "bun test:e2e login-005"
+    },
+    {
+      "id": "LOGIN-006",
+      "category": "登录系统",
+      "description": "手机号少于11位时点击'立即参与'显示错误提示",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-002"],
+      "testCommand": "bun test:e2e login-006"
+    },
+    {
+      "id": "LOGIN-007",
+      "category": "登录系统",
+      "description": "输入11位手机号后点击'立即参与'关闭登录弹窗",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-002", "LOGIN-006"],
+      "testCommand": "bun test:e2e login-007"
+    },
+    {
+      "id": "LOGIN-008",
+      "category": "登录系统",
+      "description": "登录弹窗有关闭按钮(X)且可点击",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-001"],
+      "testCommand": "bun test:e2e login-008"
+    },
+    {
+      "id": "CARD-001",
+      "category": "3D翻牌系统",
+      "description": "页面中央显示一张卡片，默认显示问号",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-007"],
+      "testCommand": "bun test:e2e card-001"
+    },
+    {
+      "id": "CARD-002",
+      "category": "3D翻牌系统",
+      "description": "未登录时点击卡片弹出登录弹窗",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["CARD-001"],
+      "testCommand": "bun test:e2e card-002"
+    },
+    {
+      "id": "CARD-003",
+      "category": "3D翻牌系统",
+      "description": "登录后点击卡片触发3D翻转动画",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-007", "CARD-001"],
+      "testCommand": "bun test:e2e card-003"
+    },
+    {
+      "id": "CARD-004",
+      "category": "3D翻牌系统",
+      "description": "翻转后卡片正面显示一个汉字（马/上/发/财/哇）",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["CARD-003"],
+      "testCommand": "bun test:e2e card-004"
+    },
+    {
+      "id": "CARD-005",
+      "category": "3D翻牌系统",
+      "description": "翻转动画持续约0.8秒",
+      "priority": "P2",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["CARD-003"],
+      "testCommand": "bun test:e2e card-005"
+    },
+    {
+      "id": "CARD-006",
+      "category": "3D翻牌系统",
+      "description": "翻转过程中卡片不可再次点击",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["CARD-003"],
+      "testCommand": "bun test:e2e card-006"
+    },
+    {
+      "id": "COLLECTION-001",
+      "category": "收集系统",
+      "description": "页面底部显示5个收集槽，对应'马上发财哇'5个字",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-007"],
+      "testCommand": "bun test:e2e collection-001"
+    },
+    {
+      "id": "COLLECTION-002",
+      "category": "收集系统",
+      "description": "初始状态所有收集槽为空（虚线边框）",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["COLLECTION-001"],
+      "testCommand": "bun test:e2e collection-002"
+    },
+    {
+      "id": "COLLECTION-003",
+      "category": "收集系统",
+      "description": "抽中某个字后，对应收集槽高亮显示该字",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["CARD-004", "COLLECTION-001"],
+      "testCommand": "bun test:e2e collection-003"
+    },
+    {
+      "id": "COLLECTION-004",
+      "category": "收集系统",
+      "description": "已收集的字卡显示金色边框",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["COLLECTION-003"],
+      "testCommand": "bun test:e2e collection-004"
+    },
+    {
+      "id": "COLLECTION-005",
+      "category": "收集系统",
+      "description": "已收集的字卡有向上浮动效果",
+      "priority": "P2",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["COLLECTION-003"],
+      "testCommand": "bun test:e2e collection-005"
+    },
+    {
+      "id": "RESULT-001",
+      "category": "结果弹窗",
+      "description": "抽卡完成后自动弹出结果弹窗",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["CARD-004"],
+      "testCommand": "bun test:e2e result-001"
+    },
+    {
+      "id": "RESULT-002",
+      "category": "结果弹窗",
+      "description": "结果弹窗显示'欧气爆发'标题",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESULT-001"],
+      "testCommand": "bun test:e2e result-002"
+    },
+    {
+      "id": "RESULT-003",
+      "category": "结果弹窗",
+      "description": "结果弹窗显示抽中的汉字（大号）",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESULT-001"],
+      "testCommand": "bun test:e2e result-003"
+    },
+    {
+      "id": "RESULT-004",
+      "category": "结果弹窗",
+      "description": "结果弹窗有'收下卡片'按钮",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESULT-001"],
+      "testCommand": "bun test:e2e result-004"
+    },
+    {
+      "id": "RESULT-005",
+      "category": "结果弹窗",
+      "description": "点击'收下卡片'按钮关闭弹窗",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESULT-004"],
+      "testCommand": "bun test:e2e result-005"
+    },
+    {
+      "id": "RESULT-006",
+      "category": "结果弹窗",
+      "description": "关闭结果弹窗后卡片翻回背面",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESULT-005"],
+      "testCommand": "bun test:e2e result-006"
+    },
+    {
+      "id": "RESULT-007",
+      "category": "结果弹窗",
+      "description": "结果弹窗有关闭按钮(X)且可点击",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESULT-001"],
+      "testCommand": "bun test:e2e result-007"
+    },
+    {
+      "id": "FINAL-001",
+      "category": "最终奖励",
+      "description": "集齐5个字后自动弹出最终奖励弹窗",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["COLLECTION-003"],
+      "testCommand": "bun test:e2e final-001"
+    },
+    {
+      "id": "FINAL-002",
+      "category": "最终奖励",
+      "description": "最终奖励弹窗显示'五福集齐·恭喜'标题",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["FINAL-001"],
+      "testCommand": "bun test:e2e final-002"
+    },
+    {
+      "id": "FINAL-003",
+      "category": "最终奖励",
+      "description": "最终奖励弹窗显示'马上发财哇'5个字",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["FINAL-001"],
+      "testCommand": "bun test:e2e final-003"
+    },
+    {
+      "id": "FINAL-004",
+      "category": "最终奖励",
+      "description": "最终奖励弹窗显示脱敏的手机号（137****8888格式）",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["FINAL-001"],
+      "testCommand": "bun test:e2e final-004"
+    },
+    {
+      "id": "FINAL-005",
+      "category": "最终奖励",
+      "description": "最终奖励弹窗显示'截图保存凭证'提示",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["FINAL-001"],
+      "testCommand": "bun test:e2e final-005"
+    },
+    {
+      "id": "FINAL-006",
+      "category": "最终奖励",
+      "description": "最终奖励弹窗显示兑奖流程（4步）",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["FINAL-001"],
+      "testCommand": "bun test:e2e final-006"
+    },
+    {
+      "id": "FINAL-007",
+      "category": "最终奖励",
+      "description": "最终奖励弹窗有'我知道了'按钮",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["FINAL-001"],
+      "testCommand": "bun test:e2e final-007"
+    },
+    {
+      "id": "FINAL-008",
+      "category": "最终奖励",
+      "description": "集齐后再次点击卡片弹出最终奖励弹窗",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["FINAL-001"],
+      "testCommand": "bun test:e2e final-008"
+    },
+    {
+      "id": "RESET-001",
+      "category": "重置功能",
+      "description": "页面右上角有'重置'按钮",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["LOGIN-007"],
+      "testCommand": "bun test:e2e reset-001"
+    },
+    {
+      "id": "RESET-002",
+      "category": "重置功能",
+      "description": "点击'重置'按钮清空收集进度",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESET-001", "COLLECTION-003"],
+      "testCommand": "bun test:e2e reset-002"
+    },
+    {
+      "id": "RESET-003",
+      "category": "重置功能",
+      "description": "点击'重置'按钮重新弹出登录弹窗",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["RESET-001"],
+      "testCommand": "bun test:e2e reset-003"
+    },
+    {
+      "id": "ALGO-001",
+      "category": "抽卡算法",
+      "description": "智能抽卡：优先抽取未收集的字",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["CARD-003", "COLLECTION-003"],
+      "testCommand": "bun test:e2e algo-001"
+    },
+    {
+      "id": "ALGO-002",
+      "category": "抽卡算法",
+      "description": "当某个字未收集时，连续抽卡不会重复抽到已收集的字",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": ["ALGO-001"],
+      "testCommand": "bun test:e2e algo-002"
+    },
+    {
+      "id": "UI-001",
+      "category": "UI/样式",
+      "description": "页面背景为中国红渐变（#b81c22）",
+      "priority": "P2",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": [],
+      "testCommand": "bun test:e2e ui-001"
+    },
+    {
+      "id": "UI-002",
+      "category": "UI/样式",
+      "description": "页面标题显示'集五福·赢大奖'",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": [],
+      "testCommand": "bun test:e2e ui-002"
+    },
+    {
+      "id": "UI-003",
+      "category": "UI/样式",
+      "description": "卡片有毛玻璃模糊效果",
+      "priority": "P2",
+      "passes": false,
+      "testType": "visual",
+      "dependencies": ["CARD-001"],
+      "testCommand": "bun test:visual ui-003"
+    },
+    {
+      "id": "UI-004",
+      "category": "UI/样式",
+      "description": "已收集的字显示金色渐变效果",
+      "priority": "P2",
+      "passes": false,
+      "testType": "visual",
+      "dependencies": ["COLLECTION-003"],
+      "testCommand": "bun test:visual ui-004"
+    },
+    {
+      "id": "RESPONSIVE-001",
+      "category": "响应式",
+      "description": "页面在480px宽度下正常显示",
+      "priority": "P0",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": [],
+      "testCommand": "bun test:e2e responsive-001"
+    },
+    {
+      "id": "RESPONSIVE-002",
+      "category": "响应式",
+      "description": "页面在320px宽度下正常显示",
+      "priority": "P1",
+      "passes": false,
+      "testType": "e2e",
+      "dependencies": [],
+      "testCommand": "bun test:e2e responsive-002"
+    }
+  ]
+}

@@ -11,7 +11,17 @@
     "build": "next build",
     "start": "next start",
     "start:3001": "next start -p 3001",
-    "lint": "eslint"
+    "lint": "eslint",
+    "init": "bash init.sh",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:e2e": "playwright test tests/test-harness.ts",
+    "test:spec": "playwright test tests/spec-tests.ts",
+    "test:deploy": "playwright test tests/deploy-tests.ts",
+    "test:cdp": "playwright test tests/spec-tests.ts --grep 'NETWORK|CONSOLE|PERF'",
+    "test:all": "playwright test tests/"
   },
   "dependencies": {
     "next": "16.0.7",
