@@ -240,7 +240,7 @@ export class CDPTestHarness {
     const frames: number[] = await this.page.evaluate((duration: number) => {
       return new Promise<number[]>((resolve) => {
         const frameTimes: number[] = [];
-        let startTime = performance.now();
+        const startTime = performance.now();
 
         function recordFrame(timestamp: number) {
           frameTimes.push(timestamp);

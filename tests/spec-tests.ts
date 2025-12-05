@@ -174,13 +174,13 @@ test.describe('SPEC验收标准 - P0', () => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto(BASE_URL);
 
-    let passed375 = await page.locator('text=集五福').isVisible();
+    const passed375 = await page.locator('text=集五福').isVisible();
 
     // 测试480px
     await page.setViewportSize({ width: 480, height: 800 });
     await page.reload();
 
-    let passed480 = await page.locator('text=集五福').isVisible();
+    const passed480 = await page.locator('text=集五福').isVisible();
 
     const passed = passed375 && passed480;
 
