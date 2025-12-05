@@ -1,5 +1,8 @@
 "use client";
 
+// ============================================================
+// 导入依赖
+// ============================================================
 import React, { useState } from 'react';
 import styles from '@/components/bank-campaign/campaign.module.css';
 import { Card } from '@/components/bank-campaign/Card';
@@ -9,105 +12,170 @@ import { ResultModal } from '@/components/bank-campaign/ResultModal';
 import { FinalRewardModal } from '@/components/bank-campaign/FinalRewardModal';
 import { cn } from '@/lib/utils';
 
+// ============================================================
+// 常量定义
+// ============================================================
+// 五张福卡的文字：马上发财哇
 const CARDS = ['马', '上', '发', '财', '哇'];
 
+// ============================================================
+// 主组件：集五福游戏页面
+// ============================================================
 export default function BankCampaignPage() {
-  // State
+  
+  // ========================================
+  // 状态管理（State）
+  // ========================================
+  
+  // 收集状态：记录 5 张卡片是否被收集
+  // 例如：[true, false, true, false, false] 表示收集了第 1 和第 3 张
   const [collected, setCollected] = useState<boolean[]>([false, false, false, false, false]);
+  
+  // 用户手机号：登录时保存
   const [userPhone, setUserPhone] = useState('');
+  
+  // 卡片翻转状态：true = 正在翻转，false = 静止
   const [isFlipped, setIsFlipped] = useState(false);
+  
+  // 当前抽到的卡片文字：'马'、'上'、'发'、'财' 或 '哇'
   const [currentResult, setCurrentResult] = useState('');
   
-  // Modals
+  // ========================================
+  // 弹窗显示状态
+  // ========================================
+  
+  // 登录弹窗：默认显示，用户需要先登录
   const [showLogin, setShowLogin] = useState(true);
+  
+  // 结果弹窗：抽卡后显示结果
   const [showResult, setShowResult] = useState(false);
+  
+  // 最终奖励弹窗：集齐 5 张后显示
   const [showFinal, setShowFinal] = useState(false);
 
-  // Logic
+  // ========================================
+  // 业务逻辑函数
+  // ========================================
+  
+  /**
+   * 处理用户登录
+   * @param phone - 用户输入的手机号
+   */
   const handleLogin = (phone: string) => {
-    setUserPhone(phone);
-    setShowLogin(false);
+    setUserPhone(phone);      // 保存手机号
+    setShowLogin(false);      // 关闭登录弹窗
   };
 
+  /**
+   * 抽卡算法：随机选择一张还没收集的卡
+   * @returns 卡片的索引（0-4）
+   */
   const getLuckyIndex = () => {
+    // 找出所有还没收集的卡片的索引
     const missing: number[] = [];
-    collected.forEach((v, i) => { if(!v) missing.push(i); });
+    collected.forEach((v, i) => { 
+      if(!v) missing.push(i);  // v 为 false 表示还没收集
+    });
     
     if (missing.length > 0) {
-      // 100% chance to get a new card for demo purposes
+      // 从没收集的卡中随机选一张（100% 抽到新卡，方便演示）
       return missing[Math.floor(Math.random() * missing.length)];
     }
+    
+    // 如果都收集了，随机返回一个（这种情况不应该发生）
     return Math.floor(Math.random() * 5);
   };
 
+  /**
+   * 抽卡主函数：处理点击卡片的逻辑
+   */
   const drawCard = () => {
+    // -------- 第 1 步：检查是否登录 --------
     if (!userPhone) {
-      setShowLogin(true);
-      return;
+      setShowLogin(true);  // 没登录，显示登录弹窗
+      return;              // 终止后续流程
     }
     
-    // Check if already collected all
-    if (collected.every(Boolean)) {
-      setShowFinal(true);
+    // -------- 第 2 步：检查是否已经集齐 --------
+    if (collected.every(Boolean)) {  // every(Boolean) 检查是否全部为 true
+      setShowFinal(true);            // 已集齐，显示最终奖励
       return;
     }
 
-    if (isFlipped) return;
+    // -------- 第 3 步：防止重复点击 --------
+    if (isFlipped) return;  // 如果正在翻转，不响应点击
 
-    const newIndex = getLuckyIndex();
-    const char = CARDS[newIndex];
-    setCurrentResult(char);
+    // -------- 第 4 步：执行抽卡 --------
+    const newIndex = getLuckyIndex();    // 调用抽卡算法，获取索引
+    const char = CARDS[newIndex];        // 根据索引获取卡片文字
+    setCurrentResult(char);              // 保存抽卡结果
     
-    // Flip animation
+    // -------- 第 5 步：开始翻转动画 --------
     setIsFlipped(true);
 
-    // Update state after animation
+    // -------- 第 6 步：等待 800ms 后更新收集状态 --------
     setTimeout(() => {
+      // 复制数组（React 要求不能直接修改 state）
       const newCollected = [...collected];
+      // 将抽到的卡标记为已收集
       newCollected[newIndex] = true;
+      // 更新状态
       setCollected(newCollected);
       
-      // Show result modal
+      // -------- 第 7 步：再等待 500ms 显示结果弹窗 --------
       setTimeout(() => {
         setShowResult(true);
       }, 500);
     }, 800);
   };
 
+  /**
+   * 关闭结果弹窗
+   */
   const closeResult = () => {
+    // 关闭结果弹窗
     setShowResult(false);
     
-    // Flip back
+    // 300ms 后让卡片翻回背面
     setTimeout(() => {
       setIsFlipped(false);
     }, 300);
 
-    // Check if collected all
+    // 检查是否集齐了所有卡片
     if (collected.every(Boolean)) {
+      // 如果集齐了，800ms 后显示最终奖励弹窗
       setTimeout(() => {
         setShowFinal(true);
       }, 800);
     }
   };
 
+  /**
+   * 重置游戏：点击"重置"按钮时调用
+   */
   const resetDemo = () => {
-    setCollected([false, false, false, false, false]);
-    setIsFlipped(false);
-    setShowFinal(false);
-    setShowResult(false);
-    setShowLogin(true);
-    setUserPhone('');
+    setCollected([false, false, false, false, false]);  // 清空收集记录
+    setIsFlipped(false);                                // 卡片翻回背面
+    setShowFinal(false);                                // 关闭最终奖励弹窗
+    setShowResult(false);                               // 关闭结果弹窗
+    setShowLogin(true);                                 // 显示登录弹窗
+    setUserPhone('');                                   // 清空手机号
   };
 
+  // ========================================
+  // 渲染 UI
+  // ========================================
   return (
     <div className="w-full h-screen bg-[#f5f5f7] overflow-hidden font-sans">
+      {/* 主容器 */}
       <div className={cn(
         "relative w-full h-full max-w-[480px] mx-auto flex flex-col items-center shadow-2xl overflow-hidden", 
         styles.campaignRoot
       )}>
         
-        {/* Controls */}
+        {/* ==================== 控制按钮区域 ==================== */}
         <div className="absolute top-4 right-4 z-[200] flex gap-2">
+          {/* 重置按钮 */}
           <button 
             onClick={resetDemo}
             className="bg-black/10 backdrop-blur-md text-white/80 px-3 py-1 rounded-full text-xs hover:bg-black/20 transition-all flex items-center"
@@ -116,29 +184,56 @@ export default function BankCampaignPage() {
           </button>
         </div>
 
-        {/* Header */}
+        {/* ==================== 标题区域 ==================== */}
         <div className="mt-[8vh] z-10 text-center">
-          <div className="text-white/80 text-sm tracking-[2px] mb-1 font-light opacity-90">银行开门红活动</div>
-          <div className={cn(styles.titleMain, "text-4xl font-black tracking-widest")}>集五福 · 赢大奖</div>
+          {/* 副标题 */}
+          <div className="text-white/80 text-sm tracking-[2px] mb-1 font-light opacity-90">
+            银行开门红活动
+          </div>
+          {/* 主标题 */}
+          <div className={cn(styles.titleMain, "text-4xl font-black tracking-widest")}>
+            集五福 · 赢大奖
+          </div>
         </div>
 
-        {/* Draw Area */}
+        {/* ==================== 抽卡区域 ==================== */}
         <div className="flex-1 w-full flex justify-center items-center relative z-10 perspective-[1200px]">
           <Card 
-            isFlipped={isFlipped} 
-            resultChar={currentResult} 
-            onDraw={drawCard} 
-            disabled={false}
+            isFlipped={isFlipped}        // 传递翻转状态
+            resultChar={currentResult}   // 传递抽到的文字
+            onDraw={drawCard}            // 点击时调用 drawCard
+            disabled={false}             // 是否禁用（目前未使用）
           />
         </div>
 
-        {/* Collection Area */}
-        <CollectionSlots collected={collected} cards={CARDS} />
+        {/* ==================== 收集槽区域 ==================== */}
+        <CollectionSlots 
+          collected={collected}  // 传递收集状态数组
+          cards={CARDS}          // 传递卡片文字数组
+        />
 
-        {/* Modals */}
-        <LoginModal isOpen={showLogin} onLogin={handleLogin} onClose={() => setShowLogin(false)} />
-        <ResultModal isOpen={showResult} char={currentResult} onClose={closeResult} />
-        <FinalRewardModal isOpen={showFinal} userPhone={userPhone} onClose={() => setShowFinal(false)} />
+        {/* ==================== 弹窗区域 ==================== */}
+        
+        {/* 登录弹窗：用户首次进入时显示 */}
+        <LoginModal 
+          isOpen={showLogin}                      // 是否显示
+          onLogin={handleLogin}                   // 登录成功回调
+          onClose={() => setShowLogin(false)}     // 关闭回调
+        />
+        
+        {/* 结果弹窗：抽卡后显示结果 */}
+        <ResultModal 
+          isOpen={showResult}     // 是否显示
+          char={currentResult}    // 显示抽到的文字
+          onClose={closeResult}   // 关闭回调
+        />
+        
+        {/* 最终奖励弹窗：集齐 5 张后显示 */}
+        <FinalRewardModal 
+          isOpen={showFinal}                     // 是否显示
+          userPhone={userPhone}                  // 显示用户手机号
+          onClose={() => setShowFinal(false)}    // 关闭回调
+        />
       </div>
     </div>
   );
