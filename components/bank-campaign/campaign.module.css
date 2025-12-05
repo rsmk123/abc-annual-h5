@@ -1,0 +1,186 @@
+/* --- 极简高级风 (Clean/Apple Premium) --- */
+.campaignRoot {
+  --bg-main: #b81c22; /* 纯正中国红 */
+  --text-primary: #fff;
+  --text-secondary: rgba(255,255,255,0.8);
+  --card-border: 1px solid rgba(0,0,0,0.05);
+  --card-bg: #ffffff;
+  --slot-bg: rgba(255,255,255,0.1);
+  --slot-border: 1px solid rgba(255,255,255,0.15);
+  --slot-active-bg: #ffffff;
+  --slot-active-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  --btn-bg: #ffffff;
+  --btn-text: #b81c22;
+  --btn-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  --modal-bg: #ffffff;
+  --modal-border: none;
+  --input-bg: #f5f5f7;
+  --input-border: none;
+  --title-gradient: #ffffff;
+
+  background: var(--bg-main);
+  min-height: 100vh;
+}
+
+/* 字体优化 - 高级黑体 */
+.fontPremium {
+  font-family: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+}
+
+/* 背景纹理 - 移除 */
+.bgPattern {
+  display: none;
+}
+
+/* 标题 */
+.titleMain {
+  color: #fff;
+  background: none;
+  text-shadow: none;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* 3D透视容器 */
+.perspectiveContainer {
+  perspective: 1200px;
+}
+
+/* 卡片容器 */
+.cardContainer {
+  transform-style: preserve-3d;
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cardContainer.flipped {
+  transform: rotateY(180deg);
+}
+
+/* 卡片正反面 */
+.cardFace {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.3);
+}
+
+/* 背面 */
+.cardBack {
+  background: #fff;
+  border: var(--card-border);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cardBackInner {
+  background: #b81c22;
+  width: 100%; height: 100%;
+  border-radius: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 6px solid #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 增加背面细节 */
+.cardBackInner::after {
+  content: "福";
+  font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-weight: 900;
+  font-size: 80px;
+  color: rgba(0,0,0,0.1);
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* 正面 */
+.cardFront {
+  background-color: var(--card-bg);
+  transform: rotateY(180deg);
+  border: var(--card-border);
+}
+
+/* 字符 - 高级黑体质感 */
+.cardChar {
+  background: linear-gradient(135deg, #d4af37 0%, #a86c05 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-family: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+  font-weight: 800; /* 加粗黑体 */
+  letter-spacing: -2px; /* 紧凑一点更现代 */
+  filter: drop-shadow(0 2px 0px rgba(0,0,0,0.1));
+  position: relative;
+}
+
+/* 字符印章效果 */
+.cardChar::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 120%; height: 120%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+  z-index: -1;
+  border-radius: 50%;
+}
+
+/* 光晕 - 移除 */
+.glowBase {
+  display: none;
+}
+
+/* 集卡槽 */
+.slot {
+  background: var(--slot-bg);
+  border: var(--slot-border);
+  color: rgba(255,255,255,0.3);
+  font-family: "PingFang SC", sans-serif;
+  font-weight: 500;
+}
+
+.slotActive {
+  background: var(--slot-active-bg);
+  box-shadow: var(--slot-active-shadow);
+  color: #b81c22;
+  border: none;
+  font-weight: 800;
+}
+
+/* 弹窗 */
+.modalMask {
+  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.4);
+  transition: opacity 0.3s;
+}
+
+.modalBody {
+  background: var(--modal-bg);
+  border: var(--modal-border);
+  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* 按钮 */
+.btnPrimary {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  box-shadow: var(--btn-shadow);
+}
+
+/* 输入框 */
+.inputBox {
+  background: var(--input-bg);
+  border: var(--input-border);
+}
+
+/* 按钮微光效果 - 移除或保留 */
+.btnShine {
+  position: relative;
+  overflow: hidden;
+}
