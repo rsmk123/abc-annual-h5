@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 后端API
+functions/api/node_modules/
+functions/api/.env
+functions/api/*.zip
+
