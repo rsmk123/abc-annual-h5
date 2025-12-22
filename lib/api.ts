@@ -1,4 +1,8 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+if (!API_BASE) {
+  throw new Error('NEXT_PUBLIC_API_BASE_URL environment variable is not configured');
+}
 
 // 获取token
 function getToken(): string | null {
@@ -35,7 +39,7 @@ async function request<T>(
 
 // 发送验证码
 export async function sendCode(phone: string, deviceId: string) {
-  return request('/auth/send-code', {
+  return request('/api/auth/send-code', {
     method: 'POST',
     body: JSON.stringify({ phone, deviceId }),
   });
@@ -47,7 +51,7 @@ export async function verifyCode(phone: string, code: string, deviceId: string) 
     success: boolean;
     token: string;
     user: any;
-  }>('/auth/verify-code', {
+  }>('/api/auth/verify-code', {
     method: 'POST',
     body: JSON.stringify({ phone, code, deviceId }),
   });
@@ -62,12 +66,12 @@ export async function verifyCode(phone: string, code: string, deviceId: string) 
 
 // 获取用户状态
 export async function getUserStatus() {
-  return request('/user/status');
+  return request('/api/user/status');
 }
 
 // 抽卡
 export async function drawCard(deviceId: string) {
-  return request('/card/draw', {
+  return request('/api/card/draw', {
     method: 'POST',
     body: JSON.stringify({ deviceId }),
   });

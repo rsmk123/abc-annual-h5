@@ -3,7 +3,7 @@
 // ============================================================
 // 导入依赖
 // ============================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '@/components/bank-campaign/campaign.module.css';
 import { Card } from '@/components/bank-campaign/Card';
 import { CollectionSlots } from '@/components/bank-campaign/CollectionSlots';
@@ -27,7 +27,58 @@ export default function BankCampaignPage() {
   // 状态管理（State）
   // ========================================
   
+  // 入场页状态：true = 显示欢迎页，false = 进入游戏
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  // 过渡动画状态：控制淡入淡出效果
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // 游戏页淡入状态
+  const [gamePageReady, setGamePageReady] = useState(false);
+
+  // 当进入游戏页时，触发淡入动画
+  useEffect(() => {
+    if (!showWelcome) {
+      // 延迟一帧后触发淡入，确保 DOM 已渲染
+      requestAnimationFrame(() => {
+        setGamePageReady(true);
+      });
+    }
+  }, [showWelcome]);
+
+  /**
+   * 播放点击音效（使用 Web Audio API 生成）
+   */
+  const playClickSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+
+      // 创建振荡器（音调）
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // 设置音效参数：清脆的点击声
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+      oscillator.type = 'sine';
+
+      // 音量渐变：快速淡出
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+      // 播放
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.15);
+    } catch {
+      // 如果浏览器不支持，静默失败
+    }
+  };
+  
   // 收集状态：记录 5 张卡片是否被收集
+  
   // 例如：[true, false, true, false, false] 表示收集了第 1 和第 3 张
   const [collected, setCollected] = useState<boolean[]>([false, false, false, false, false]);
   
@@ -44,8 +95,8 @@ export default function BankCampaignPage() {
   // 弹窗显示状态
   // ========================================
   
-  // 登录弹窗：默认显示，用户需要先登录
-  const [showLogin, setShowLogin] = useState(true);
+  // 登录弹窗：点击抽卡时才显示
+  const [showLogin, setShowLogin] = useState(false);
   
   // 结果弹窗：抽卡后显示结果
   const [showResult, setShowResult] = useState(false);
@@ -158,19 +209,65 @@ export default function BankCampaignPage() {
     setIsFlipped(false);                                // 卡片翻回背面
     setShowFinal(false);                                // 关闭最终奖励弹窗
     setShowResult(false);                               // 关闭结果弹窗
-    setShowLogin(true);                                 // 显示登录弹窗
+    setShowLogin(false);                                // 关闭登录弹窗
     setUserPhone('');                                   // 清空手机号
+    setShowWelcome(true);                               // 回到欢迎页
+    setIsTransitioning(false);                          // 重置过渡状态
+    setGamePageReady(false);                            // 重置游戏页淡入状态
+  };
+
+  /**
+   * 处理从欢迎页到游戏页的过渡
+   */
+  const handleStartGame = () => {
+    playClickSound();          // 播放点击音效
+    setIsTransitioning(true);  // 开始过渡动画
+    setTimeout(() => {
+      setShowWelcome(false);   // 切换到游戏页
+    }, 600);  // 等待淡出动画完成
   };
 
   // ========================================
   // 渲染 UI
   // ========================================
+  
+  // 如果显示欢迎页，渲染入场页面
+  if (showWelcome) {
+    return (
+      <div className="w-full h-screen bg-[#f5f5f7] overflow-hidden font-sans">
+        <div
+          className={cn(
+            "relative w-full h-full max-w-[480px] mx-auto shadow-2xl overflow-hidden transition-all duration-[600ms] ease-out",
+            isTransitioning && "opacity-0 scale-105"
+          )}
+        >
+          {/* 欢迎页背景图 */}
+          <img
+            src="/images/welcome-cover.png"
+            alt="欢迎"
+            className="w-full h-full object-cover"
+          />
+          {/* 点击进入按钮 */}
+          <button
+            onClick={handleStartGame}
+            disabled={isTransitioning}
+            className={cn(
+              "absolute bottom-[6%] left-1/2 -translate-x-1/2 bg-white/95 text-[#b81c22] px-14 py-3.5 rounded-full text-lg font-semibold tracking-widest shadow-[0_4px_20px_rgba(0,0,0,0.15)] active:scale-[0.97] transition-all backdrop-blur-sm",
+              isTransitioning && "opacity-0 translate-y-4"
+            )}
+          >开始集福</button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="w-full h-screen bg-[#f5f5f7] overflow-hidden font-sans">
       {/* 主容器 */}
       <div className={cn(
-        "relative w-full h-full max-w-[480px] mx-auto flex flex-col items-center shadow-2xl overflow-hidden", 
-        styles.campaignRoot
+        "relative w-full h-full max-w-[480px] mx-auto flex flex-col items-center shadow-2xl overflow-hidden transition-all duration-[600ms] ease-out",
+        styles.campaignRoot,
+        gamePageReady ? "opacity-100 scale-100" : "opacity-0 scale-95"
       )}>
         
         {/* ==================== 控制按钮区域 ==================== */}

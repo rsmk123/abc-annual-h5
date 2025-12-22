@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
-import { Smartphone, Lock, X } from 'lucide-react';
+import { X } from 'lucide-react';
+import { sendCode, verifyCode } from '@/lib/api';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -12,13 +13,77 @@ interface LoginModalProps {
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin, onClose }) => {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
+  const [countdown, setCountdown] = useState(0);
+  const [sending, setSending] = useState(false);
 
-  const handleLogin = () => {
+  // 生成设备ID（简单实现）
+  const getDeviceId = () => {
+    let deviceId = localStorage.getItem('deviceId');
+    if (!deviceId) {
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('deviceId', deviceId);
+    }
+    return deviceId;
+  };
+
+  const handleSendCode = async () => {
     if (phone.length !== 11) {
-      alert("请输入11位手机号演示");
+      alert('请输入正确的11位手机号');
       return;
     }
-    onLogin(phone);
+
+    if (countdown > 0) {
+      return;
+    }
+
+    setSending(true);
+    try {
+      const result = await sendCode(phone, getDeviceId());
+      if (result.success) {
+        alert('验证码已发送');
+        setCountdown(60);
+        const timer = setInterval(() => {
+          setCountdown((prev) => {
+            if (prev <= 1) {
+              clearInterval(timer);
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        alert(result.error || '发送失败，请稍后重试');
+      }
+    } catch (error) {
+      alert('发送失败，请稍后重试');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (phone.length !== 11) {
+      alert('请输入正确的11位手机号');
+      return;
+    }
+
+    if (code.length !== 6) {
+      alert('请输入6位验证码');
+      return;
+    }
+
+    try {
+      const result = await verifyCode(phone, code, getDeviceId());
+      if (result.success) {
+        // 保存 token
+        localStorage.setItem('token', result.token);
+        onLogin(phone);
+      } else {
+        alert(result.error || '验证失败，请重试');
+      }
+    } catch (error) {
+      alert('验证失败，请重试');
+    }
   };
 
   return (
@@ -31,22 +96,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin, onClose
         >
           <X size={20} />
         </button>
-
-        {/* 顶部装饰 */}
-        <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-[#f0c676] to-[#cfa002] rounded-2xl flex justify-center items-center shadow-lg transform rotate-3">
-          <Smartphone className="text-white w-8 h-8" />
-        </div>
         
-        <h3 className="text-[#333] text-xl font-bold mb-2 tracking-wide">手机号登录</h3>
-        <p className="text-[#999] text-xs mb-8 font-light">登录后数据将自动同步至云端</p>
+        <h3 className="text-[#333] text-xl font-bold mb-8 tracking-wide">绑定手机号</h3>
         
         <div className="space-y-4">
-          <div className={cn(styles.inputBox, "group border border-transparent focus-within:border-[#f0c676] transition-all duration-300 rounded-xl px-4 py-3 flex items-center")}>
-            <Smartphone className="text-[#ccc] group-focus-within:text-[#d4af37] w-5 h-5 transition-colors" />
-            <div className="w-[1px] h-4 bg-[#eee] mx-3"></div>
+          {/* 手机号输入框 */}
+          <div className="bg-[#f5f5f5] rounded-lg">
             <input 
               type="tel" 
-              className="flex-1 bg-transparent border-none outline-none text-[15px] text-[#333] placeholder:text-[#ccc]"
+              className="w-full bg-transparent border-none outline-none text-[16px] text-[#333] placeholder:text-[#999] px-4 py-4"
               placeholder="请输入手机号" 
               maxLength={11}
               value={phone}
@@ -54,32 +112,31 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onLogin, onClose
             />
           </div>
           
-          <div className="flex gap-3">
-            <div className={cn(styles.inputBox, "group border border-transparent focus-within:border-[#f0c676] transition-all duration-300 rounded-xl px-4 py-3 flex-1 flex items-center")}>
-              <Lock className="text-[#ccc] group-focus-within:text-[#d4af37] w-5 h-5 transition-colors" />
-              <div className="w-[1px] h-4 bg-[#eee] mx-3"></div>
-              <input 
-                type="number" 
-                className="flex-1 bg-transparent border-none outline-none text-[15px] text-[#333] placeholder:text-[#ccc] w-full"
-                placeholder="验证码"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-              />
-            </div>
-            <button 
-              className="px-4 rounded-xl text-[#d4af37] text-sm font-medium border border-[#f0c676]/30 hover:bg-[#f0c676]/10 active:scale-95 transition-all whitespace-nowrap"
-              onClick={() => alert('模拟验证码: 8888')}
+          {/* 验证码输入框 */}
+          <div className="bg-[#f5f5f5] rounded-lg flex items-center overflow-hidden">
+            <input
+              type="number"
+              className="flex-1 min-w-0 bg-transparent border-none outline-none text-[16px] text-[#333] placeholder:text-[#999] px-4 py-4"
+              placeholder="验证码"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+            />
+            <button
+              className="flex-shrink-0 px-3 py-4 text-[#b81c22] text-[14px] font-medium whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSendCode}
+              disabled={countdown > 0 || sending}
             >
-              获取
+              {countdown > 0 ? `${countdown}s` : sending ? '...' : '获取验证码'}
             </button>
           </div>
         </div>
 
         <button 
-          className={cn(styles.btnShine, styles.btnPrimary, "w-full py-4 rounded-xl font-bold text-base mt-8 active:scale-[0.98] transition-all")}
+          className="w-full py-4 rounded-lg font-bold text-base mt-8 active:scale-[0.98] transition-all bg-[#b81c22] text-white"
           onClick={handleLogin}
         >
-          立即参与
+          登录
         </button>
       </div>
     </div>

@@ -21,21 +21,26 @@
     "test:spec": "playwright test tests/spec-tests.ts",
     "test:deploy": "playwright test tests/deploy-tests.ts",
     "test:cdp": "playwright test tests/spec-tests.ts --grep 'NETWORK|CONSOLE|PERF'",
-    "test:all": "playwright test tests/"
+    "test:all": "playwright test tests/",
+    "e2e:chrome": "node e2e-chrome-devtools.js",
+    "e2e:chrome:headless": "node e2e-chrome-devtools.js --headless"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "cos-nodejs-sdk-v5": "^2.15.4",
+    "lucide-react": "^0.468.0",
     "next": "16.0.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "lucide-react": "^0.468.0",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^2.6.0",
+    "tencentcloud-sdk-nodejs": "^4.1.156"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "chrome-remote-interface": "^0.33.3",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
