@@ -38,7 +38,10 @@ async function request<T>(
 }
 
 // 发送验证码
-export async function sendCode(phone: string, deviceId: string) {
+export async function sendCode(phone: string, deviceId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
   return request('/api/auth/send-code', {
     method: 'POST',
     body: JSON.stringify({ phone, deviceId }),
@@ -50,7 +53,8 @@ export async function verifyCode(phone: string, code: string, deviceId: string) 
   const response = await request<{
     success: boolean;
     token: string;
-    user: any;
+    user: unknown;
+    error?: string;
   }>('/api/auth/verify-code', {
     method: 'POST',
     body: JSON.stringify({ phone, code, deviceId }),
