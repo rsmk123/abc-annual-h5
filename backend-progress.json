@@ -1,0 +1,77 @@
+{
+  "version": "1.0.0",
+  "startTime": "2025-12-07T10:00:00Z",
+  "lastUpdate": "2025-12-07T10:00:00Z",
+  "totalSteps": 7,
+  "completedSteps": 0,
+  "steps": [
+    {
+      "id": "step-1",
+      "name": "准备工作",
+      "status": "pending",
+      "tasks": [
+        { "name": "安装Node.js", "completed": false },
+        { "name": "安装Serverless Framework", "completed": false },
+        { "name": "配置腾讯云密钥", "completed": false }
+      ]
+    },
+    {
+      "id": "step-2",
+      "name": "创建腾讯云资源",
+      "status": "pending",
+      "tasks": [
+        { "name": "创建PostgreSQL数据库", "completed": false, "connectionInfo": null },
+        { "name": "创建Redis实例", "completed": false, "connectionInfo": null }
+      ]
+    },
+    {
+      "id": "step-3",
+      "name": "初始化数据库",
+      "status": "pending",
+      "tasks": [
+        { "name": "连接数据库", "completed": false },
+        { "name": "执行建表SQL", "completed": false },
+        { "name": "验证表创建", "completed": false }
+      ]
+    },
+    {
+      "id": "step-4",
+      "name": "创建云函数代码",
+      "status": "pending",
+      "tasks": [
+        { "name": "创建目录结构", "completed": false },
+        { "name": "创建11个代码文件", "completed": false }
+      ]
+    },
+    {
+      "id": "step-5",
+      "name": "部署云函数",
+      "status": "pending",
+      "tasks": [
+        { "name": "配置环境变量", "completed": false },
+        { "name": "安装依赖", "completed": false },
+        { "name": "部署到腾讯云", "completed": false },
+        { "name": "测试API接口", "completed": false }
+      ]
+    },
+    {
+      "id": "step-6",
+      "name": "前端对接",
+      "status": "pending",
+      "tasks": [
+        { "name": "创建API客户端", "completed": false },
+        { "name": "配置环境变量", "completed": false }
+      ]
+    },
+    {
+      "id": "step-7",
+      "name": "端到端验证",
+      "status": "pending",
+      "tasks": [
+        { "name": "前端测试", "completed": false },
+        { "name": "数据库验证", "completed": false },
+        { "name": "生产部署", "completed": false }
+      ]
+    }
+  ]
+}

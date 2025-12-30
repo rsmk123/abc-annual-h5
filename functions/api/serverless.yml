@@ -1,0 +1,40 @@
+component: scf
+name: abc-bank-h5-api
+app: abc-bank-h5
+
+inputs:
+  name: abc-bank-h5-api
+  src: ./
+  handler: index.main_handler
+  runtime: Nodejs18.15
+  region: ap-guangzhou
+  memorySize: 512
+  timeout: 30
+
+  # 环境变量 - 请在腾讯云控制台配置实际值
+  environment:
+    variables:
+      # 数据库配置（外网访问地址）
+      POSTGRES_HOST: ${env:POSTGRES_HOST}
+      POSTGRES_PORT: ${env:POSTGRES_PORT}
+      POSTGRES_USER: ${env:POSTGRES_USER}
+      POSTGRES_PASSWORD: ${env:POSTGRES_PASSWORD}
+      POSTGRES_DB: ${env:POSTGRES_DB}
+
+      # Redis配置（外网访问地址）
+      REDIS_HOST: ${env:REDIS_HOST}
+      REDIS_PORT: ${env:REDIS_PORT}
+      REDIS_PASSWORD: ${env:REDIS_PASSWORD}
+
+      # JWT密钥
+      JWT_SECRET: ${env:JWT_SECRET}
+
+      # 加密密钥（32字节）
+      ENCRYPT_KEY: ${env:ENCRYPT_KEY}
+
+      # 腾讯云短信服务
+      TENCENT_SECRET_ID: ${env:TENCENT_SECRET_ID}
+      TENCENT_SECRET_KEY: ${env:TENCENT_SECRET_KEY}
+      TENCENT_SMS_APP_ID: ${env:TENCENT_SMS_APP_ID}
+      TENCENT_SMS_SIGN_NAME: ${env:TENCENT_SMS_SIGN_NAME}
+      TENCENT_SMS_TEMPLATE_ID: ${env:TENCENT_SMS_TEMPLATE_ID}

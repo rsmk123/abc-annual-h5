@@ -3,198 +3,311 @@
 // ============================================================
 // 导入依赖
 // ============================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, VolumeX } from 'lucide-react';
 import styles from '@/components/bank-campaign/campaign.module.css';
-import { Card } from '@/components/bank-campaign/Card';
+import { Card, DrawPhase } from '@/components/bank-campaign/Card';
 import { CollectionSlots } from '@/components/bank-campaign/CollectionSlots';
 import { LoginModal } from '@/components/bank-campaign/LoginModal';
 import { ResultModal } from '@/components/bank-campaign/ResultModal';
 import { FinalRewardModal } from '@/components/bank-campaign/FinalRewardModal';
+import { RulesModal } from '@/components/bank-campaign/RulesModal';
+import { DebugPanel } from '@/components/bank-campaign/DebugPanel';
+import { DrawButton, RulesButton } from '@/components/bank-campaign/DrawButton';
 import { cn } from '@/lib/utils';
-
-// ============================================================
-// 常量定义
-// ============================================================
-// 五张福卡的文字：马上发财哇
-const CARDS = ['马', '上', '发', '财', '哇'];
+import { CARDS, CardChar } from '@/lib/cardConfig';
 
 // ============================================================
 // 主组件：集五福游戏页面
 // ============================================================
 export default function BankCampaignPage() {
-  
+
   // ========================================
   // 状态管理（State）
   // ========================================
-  
-  // 入场页状态：true = 显示欢迎页，false = 进入游戏
+
+  // 入场页状态
   const [showWelcome, setShowWelcome] = useState(true);
-
-  // 过渡动画状态：控制淡入淡出效果
   const [isTransitioning, setIsTransitioning] = useState(false);
-
-  // 游戏页淡入状态
   const [gamePageReady, setGamePageReady] = useState(false);
 
-  // 当进入游戏页时，触发淡入动画
-  useEffect(() => {
-    if (!showWelcome) {
-      // 延迟一帧后触发淡入，确保 DOM 已渲染
-      requestAnimationFrame(() => {
-        setGamePageReady(true);
-      });
-    }
-  }, [showWelcome]);
+  // 背景音乐状态
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  /**
-   * 播放点击音效（使用 Web Audio API 生成）
-   */
-  const playClickSound = () => {
-    try {
-      const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+  // 今日是否已抽卡
+  const [hasDrawnToday, setHasDrawnToday] = useState(false);
 
-      // 创建振荡器（音调）
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      // 设置音效参数：清脆的点击声
-      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
-      oscillator.type = 'sine';
-
-      // 音量渐变：快速淡出
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
-
-      // 播放
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.15);
-    } catch {
-      // 如果浏览器不支持，静默失败
-    }
-  };
-  
   // 收集状态：记录 5 张卡片是否被收集
-  
-  // 例如：[true, false, true, false, false] 表示收集了第 1 和第 3 张
   const [collected, setCollected] = useState<boolean[]>([false, false, false, false, false]);
-  
-  // 用户手机号：登录时保存
+
+  // 每张卡的数量
+  const [cardCounts, setCardCounts] = useState<number[]>([0, 0, 0, 0, 0]);
+
+  // 用户手机号
   const [userPhone, setUserPhone] = useState('');
-  
-  // 卡片翻转状态：true = 正在翻转，false = 静止
-  const [isFlipped, setIsFlipped] = useState(false);
-  
-  // 当前抽到的卡片文字：'马'、'上'、'发'、'财' 或 '哇'
-  const [currentResult, setCurrentResult] = useState('');
-  
+
+  // 抽卡阶段状态
+  const [drawPhase, setDrawPhase] = useState<DrawPhase>('idle');
+
+  // 当前抽到的卡片
+  const [currentResult, setCurrentResult] = useState<CardChar | null>(null);
+
+  // 抽卡动画结束回调（由抽卡动画 video 触发）
+  const drawAnimationDoneRef = useRef<(() => void) | null>(null);
+  const [showDrawAnimationVideo, setShowDrawAnimationVideo] = useState(false);
+  const [drawAnimationVideoKey, setDrawAnimationVideoKey] = useState(0);
+
   // ========================================
   // 弹窗显示状态
   // ========================================
-  
-  // 登录弹窗：点击抽卡时才显示
   const [showLogin, setShowLogin] = useState(false);
-  
-  // 结果弹窗：抽卡后显示结果
   const [showResult, setShowResult] = useState(false);
-  
-  // 最终奖励弹窗：集齐 5 张后显示
   const [showFinal, setShowFinal] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+
+  // 测试模式状态（默认开启，方便UI测试）
+  const [testMode, setTestMode] = useState(true);
+
+  // ========================================
+  // 初始化：从 localStorage 恢复状态
+  // ========================================
+  useEffect(() => {
+    const lastDrawDate = localStorage.getItem('lastDrawDate');
+    const today = new Date().toDateString();
+    if (lastDrawDate === today) {
+      setHasDrawnToday(true);
+    }
+
+    // 恢复收集状态
+    const savedCollected = localStorage.getItem('abc_collected');
+    if (savedCollected) {
+      try {
+        setCollected(JSON.parse(savedCollected));
+      } catch {}
+    }
+
+    // 恢复卡片数量
+    const savedCounts = localStorage.getItem('abc_card_counts');
+    if (savedCounts) {
+      try {
+        setCardCounts(JSON.parse(savedCounts));
+      } catch {}
+    }
+
+    // 恢复用户手机号
+    const savedPhone = localStorage.getItem('abc_user_phone');
+    if (savedPhone) {
+      setUserPhone(savedPhone);
+    }
+
+    // 恢复测试模式状态
+    const savedTestMode = localStorage.getItem('abc_test_mode');
+    if (savedTestMode === 'true') {
+      setTestMode(true);
+    }
+  }, []);
+
+  // ========================================
+  // 状态持久化
+  // ========================================
+  useEffect(() => {
+    localStorage.setItem('abc_collected', JSON.stringify(collected));
+  }, [collected]);
+
+  useEffect(() => {
+    localStorage.setItem('abc_card_counts', JSON.stringify(cardCounts));
+  }, [cardCounts]);
 
   // ========================================
   // 业务逻辑函数
   // ========================================
-  
+
+  /**
+   * 播放点击音效
+   */
+  const playClickSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(400, audioContext.currentTime + 0.1);
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.15);
+    } catch {}
+  };
+
   /**
    * 处理用户登录
-   * @param phone - 用户输入的手机号
    */
   const handleLogin = (phone: string) => {
-    setUserPhone(phone);      // 保存手机号
-    setShowLogin(false);      // 关闭登录弹窗
+    setUserPhone(phone);
+    localStorage.setItem('abc_user_phone', phone);
+    setShowLogin(false);
   };
 
   /**
-   * 抽卡算法：随机选择一张还没收集的卡
-   * @returns 卡片的索引（0-4）
+   * 抽卡算法：5-10天内集齐的概率控制
    */
-  const getLuckyIndex = () => {
-    // 找出所有还没收集的卡片的索引
-    const missing: number[] = [];
-    collected.forEach((v, i) => { 
-      if(!v) missing.push(i);  // v 为 false 表示还没收集
+  const getLuckyIndex = (): number => {
+    // 找出未收集的卡片索引
+    const missingIndices: number[] = [];
+    const collectedIndices: number[] = [];
+
+    collected.forEach((isCollected, index) => {
+      if (isCollected) {
+        collectedIndices.push(index);
+      } else {
+        missingIndices.push(index);
+      }
     });
-    
-    if (missing.length > 0) {
-      // 从没收集的卡中随机选一张（100% 抽到新卡，方便演示）
-      return missing[Math.floor(Math.random() * missing.length)];
+
+    // 如果全部收集完，随机返回
+    if (missingIndices.length === 0) {
+      return Math.floor(Math.random() * 5);
     }
-    
-    // 如果都收集了，随机返回一个（这种情况不应该发生）
-    return Math.floor(Math.random() * 5);
+
+    // 如果还没收集任何卡，100% 抽新卡
+    if (collectedIndices.length === 0) {
+      return missingIndices[Math.floor(Math.random() * missingIndices.length)];
+    }
+
+    // 获取累计抽卡次数
+    const totalDrawCount = cardCounts.reduce((a, b) => a + b, 0);
+
+    // 根据抽卡次数确定抽到新卡的概率
+    let newCardProbability: number;
+    if (totalDrawCount < 3) {
+      newCardProbability = 0.7;
+    } else if (totalDrawCount < 6) {
+      newCardProbability = 0.5;
+    } else if (totalDrawCount < 9) {
+      newCardProbability = 0.8;
+    } else {
+      newCardProbability = 1.0;
+    }
+
+    // 只剩1张卡没收集时，提高概率
+    if (missingIndices.length === 1 && totalDrawCount >= 5) {
+      newCardProbability = Math.max(newCardProbability, 0.9);
+    }
+
+    // 抽取
+    const random = Math.random();
+    if (random < newCardProbability) {
+      return missingIndices[Math.floor(Math.random() * missingIndices.length)];
+    } else {
+      return collectedIndices[Math.floor(Math.random() * collectedIndices.length)];
+    }
   };
 
   /**
-   * 抽卡主函数：处理点击卡片的逻辑
+   * 抽卡主函数
    */
-  const drawCard = () => {
-    // -------- 第 1 步：检查是否登录 --------
-    if (!userPhone) {
-      setShowLogin(true);  // 没登录，显示登录弹窗
-      return;              // 终止后续流程
-    }
-    
-    // -------- 第 2 步：检查是否已经集齐 --------
-    if (collected.every(Boolean)) {  // every(Boolean) 检查是否全部为 true
-      setShowFinal(true);            // 已集齐，显示最终奖励
+  const drawCard = async () => {
+    // 测试模式：跳过登录检查
+    if (!testMode && !userPhone) {
+      setShowLogin(true);
       return;
     }
 
-    // -------- 第 3 步：防止重复点击 --------
-    if (isFlipped) return;  // 如果正在翻转，不响应点击
+    // 测试模式：跳过每日抽卡限制
+    if (!testMode && hasDrawnToday) {
+      return;
+    }
 
-    // -------- 第 4 步：执行抽卡 --------
-    const newIndex = getLuckyIndex();    // 调用抽卡算法，获取索引
-    const char = CARDS[newIndex];        // 根据索引获取卡片文字
-    setCurrentResult(char);              // 保存抽卡结果
-    
-    // -------- 第 5 步：开始翻转动画 --------
-    setIsFlipped(true);
+    // 检查是否已集齐
+    if (collected.every(Boolean)) {
+      setShowFinal(true);
+      return;
+    }
 
-    // -------- 第 6 步：等待 800ms 后更新收集状态 --------
+    // 防止重复点击
+    if (drawPhase !== 'idle') return;
+
+    // 播放音效
+    playClickSound();
+
+    // 1. 开始旋转动画
+    setDrawPhase('spinning');
+
+    // 等待抽卡视频动画播放结束（兜底 3.5 秒，视频约3秒）
+    const waitForDrawAnimationEnd = () =>
+      new Promise<void>((resolve) => {
+        let finished = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          drawAnimationDoneRef.current = null;
+          // setShowDrawAnimationVideo(false); // 保持视频最后帧，弹窗关闭后再隐藏
+          resolve();
+        };
+
+        drawAnimationDoneRef.current = finish;
+        timeoutId = setTimeout(finish, 3500);
+      });
+
+    setShowDrawAnimationVideo(true);
+    setDrawAnimationVideoKey((k) => k + 1);
+
+    // 2. 执行抽卡算法
+    const newIndex = getLuckyIndex();
+    const char = CARDS[newIndex] as CardChar;
+
+    // 3. 记录今日已抽卡（测试模式下不记录，可以无限抽）
+    if (!testMode) {
+      const today = new Date().toDateString();
+      localStorage.setItem('lastDrawDate', today);
+      setHasDrawnToday(true);
+    }
+
+    // 4. 等待动画完成（视频结束）
+    await waitForDrawAnimationEnd();
+
+    // 5. 显示结果
+    setDrawPhase('revealing');
+    setCurrentResult(char);
+
+    // 6. 更新收集状态
+    const newCollected = [...collected];
+    newCollected[newIndex] = true;
+    setCollected(newCollected);
+
+    // 更新卡片数量
+    const newCounts = [...cardCounts];
+    newCounts[newIndex] += 1;
+    setCardCounts(newCounts);
+
+    // 7. 显示结果弹窗
     setTimeout(() => {
-      // 复制数组（React 要求不能直接修改 state）
-      const newCollected = [...collected];
-      // 将抽到的卡标记为已收集
-      newCollected[newIndex] = true;
-      // 更新状态
-      setCollected(newCollected);
-      
-      // -------- 第 7 步：再等待 500ms 显示结果弹窗 --------
-      setTimeout(() => {
-        setShowResult(true);
-      }, 500);
-    }, 800);
+      setShowResult(true);
+      setDrawPhase('done');
+    }, 500);
   };
 
   /**
    * 关闭结果弹窗
    */
   const closeResult = () => {
-    // 关闭结果弹窗
     setShowResult(false);
-    
-    // 300ms 后让卡片翻回背面
+    setShowDrawAnimationVideo(false); // 关闭弹窗时隐藏视频
+
+    // 重置抽卡状态
     setTimeout(() => {
-      setIsFlipped(false);
+      setDrawPhase('idle');
     }, 300);
 
-    // 检查是否集齐了所有卡片
+    // 检查是否集齐
     if (collected.every(Boolean)) {
-      // 如果集齐了，800ms 后显示最终奖励弹窗
       setTimeout(() => {
         setShowFinal(true);
       }, 800);
@@ -202,135 +315,363 @@ export default function BankCampaignPage() {
   };
 
   /**
-   * 重置游戏：点击"重置"按钮时调用
+   * 小重置 - 只重置福卡收集进度和今日抽卡状态
    */
-  const resetDemo = () => {
-    setCollected([false, false, false, false, false]);  // 清空收集记录
-    setIsFlipped(false);                                // 卡片翻回背面
-    setShowFinal(false);                                // 关闭最终奖励弹窗
-    setShowResult(false);                               // 关闭结果弹窗
-    setShowLogin(false);                                // 关闭登录弹窗
-    setUserPhone('');                                   // 清空手机号
-    setShowWelcome(true);                               // 回到欢迎页
-    setIsTransitioning(false);                          // 重置过渡状态
-    setGamePageReady(false);                            // 重置游戏页淡入状态
+  const resetCards = () => {
+    setCollected([false, false, false, false, false]);
+    setCardCounts([0, 0, 0, 0, 0]);
+    setDrawPhase('idle');
+    setCurrentResult(null);
+    setShowFinal(false);
+    setShowResult(false);
+    setHasDrawnToday(false);
+    localStorage.removeItem('lastDrawDate');
+    localStorage.removeItem('abc_collected');
+    localStorage.removeItem('abc_card_counts');
   };
 
   /**
-   * 处理从欢迎页到游戏页的过渡
+   * 大重置 - 完全重置所有状态（包括登录信息）
+   */
+  const resetAll = () => {
+    // 先执行小重置
+    setCollected([false, false, false, false, false]);
+    setCardCounts([0, 0, 0, 0, 0]);
+    setDrawPhase('idle');
+    setCurrentResult(null);
+    setShowFinal(false);
+    setShowResult(false);
+    setHasDrawnToday(false);
+    // 再重置登录状态
+    setShowLogin(false);
+    setUserPhone('');
+    setShowWelcome(true);
+    setIsTransitioning(false);
+    setGamePageReady(false);
+    // 清除所有本地存储
+    localStorage.removeItem('lastDrawDate');
+    localStorage.removeItem('abc_collected');
+    localStorage.removeItem('abc_card_counts');
+    localStorage.removeItem('abc_user_phone');
+    localStorage.removeItem('deviceId');
+    // 停止音乐
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsMusicPlaying(false);
+  };
+
+  /**
+   * 老板键 - 直接集齐5张卡并显示最终弹窗
+   */
+  const bossKey = () => {
+    // 设置所有卡片为已收集
+    setCollected([true, true, true, true, true]);
+    setCardCounts([1, 1, 1, 1, 1]);
+    // 保存到 localStorage
+    localStorage.setItem('abc_collected', JSON.stringify([true, true, true, true, true]));
+    localStorage.setItem('abc_card_counts', JSON.stringify([1, 1, 1, 1, 1]));
+    // 触发最终弹窗（会先播放骑马动画）
+    setShowFinal(true);
+  };
+
+  /**
+   * 快速登录 - 测试模式下直接设置手机号
+   */
+  const quickLogin = () => {
+    const testPhone = '13800138000';
+    setUserPhone(testPhone);
+    localStorage.setItem('abc_user_phone', testPhone);
+    setShowLogin(false);
+  };
+
+  /**
+   * 设置卡片数量 - 用于调试
+   */
+  const setCards = (count: number) => {
+    const newCollected = CARDS.map((_, idx) => idx < count);
+    const newCounts = CARDS.map((_, idx) => idx < count ? 1 : 0);
+    setCollected(newCollected);
+    setCardCounts(newCounts);
+    localStorage.setItem('abc_collected', JSON.stringify(newCollected));
+    localStorage.setItem('abc_card_counts', JSON.stringify(newCounts));
+    // 如果集齐5张，触发最终弹窗
+    if (count === 5) {
+      setShowFinal(true);
+    }
+  };
+
+  /**
+   * 切换测试模式
+   */
+  const handleTestModeChange = (mode: boolean) => {
+    setTestMode(mode);
+    localStorage.setItem('abc_test_mode', mode ? 'true' : 'false');
+  };
+
+  /**
+   * 切换背景音乐
+   */
+  const toggleMusic = () => {
+    if (audioRef.current) {
+      if (isMusicPlaying) {
+        audioRef.current.pause();
+      } else {
+        audioRef.current.play().catch(() => {});
+      }
+      setIsMusicPlaying(!isMusicPlaying);
+    }
+  };
+
+  /**
+   * 开始游戏
    */
   const handleStartGame = () => {
-    playClickSound();          // 播放点击音效
-    setIsTransitioning(true);  // 开始过渡动画
+    playClickSound();
+    setIsTransitioning(true);
+    setGamePageReady(true);
+    if (audioRef.current) {
+      audioRef.current.play().then(() => {
+        setIsMusicPlaying(true);
+      }).catch(() => {});
+    }
     setTimeout(() => {
-      setShowWelcome(false);   // 切换到游戏页
-    }, 600);  // 等待淡出动画完成
+      setShowWelcome(false);
+    }, 600);
   };
 
   // ========================================
   // 渲染 UI
   // ========================================
-  
-  // 如果显示欢迎页，渲染入场页面
-  if (showWelcome) {
-    return (
-      <div className="w-full h-screen bg-[#f5f5f7] overflow-hidden font-sans">
-        <div
-          className={cn(
-            "relative w-full h-full max-w-[480px] mx-auto shadow-2xl overflow-hidden transition-all duration-[600ms] ease-out",
-            isTransitioning && "opacity-0 scale-105"
-          )}
-        >
-          {/* 欢迎页背景图 */}
-          <img
-            src="/images/welcome-cover.png"
-            alt="欢迎"
-            className="w-full h-full object-cover"
-          />
-          {/* 点击进入按钮 */}
-          <button
-            onClick={handleStartGame}
-            disabled={isTransitioning}
-            className={cn(
-              "absolute bottom-[6%] left-1/2 -translate-x-1/2 bg-white/95 text-[#b81c22] px-14 py-3.5 rounded-full text-lg font-semibold tracking-widest shadow-[0_4px_20px_rgba(0,0,0,0.15)] active:scale-[0.97] transition-all backdrop-blur-sm",
-              isTransitioning && "opacity-0 translate-y-4"
-            )}
-          >开始集福</button>
-        </div>
-      </div>
-    );
-  }
-  
   return (
-    <div className="w-full h-screen bg-[#f5f5f7] overflow-hidden font-sans">
-      {/* 主容器 */}
-      <div className={cn(
-        "relative w-full h-full max-w-[480px] mx-auto flex flex-col items-center shadow-2xl overflow-hidden transition-all duration-[600ms] ease-out",
-        styles.campaignRoot,
-        gamePageReady ? "opacity-100 scale-100" : "opacity-0 scale-95"
-      )}>
-        
-        {/* ==================== 控制按钮区域 ==================== */}
-        <div className="absolute top-4 right-4 z-[200] flex gap-2">
-          {/* 重置按钮 */}
-          <button 
-            onClick={resetDemo}
-            className="bg-black/10 backdrop-blur-md text-white/80 px-3 py-1 rounded-full text-xs hover:bg-black/20 transition-all flex items-center"
-          >
-            ↻ 重置
-          </button>
+    <div className="w-full h-screen bg-[#1a0808] overflow-hidden font-sans">
+      {/* 外层容器 - 撑满屏幕 */}
+      <div className="relative w-full h-full max-w-[480px] mx-auto">
+
+        {/* ==================== 背景图层（自适应撑满） ==================== */}
+        <div className={cn(
+          "absolute inset-0 transition-all duration-[600ms] ease-out",
+          styles.campaignRoot,
+          gamePageReady ? "opacity-100" : "opacity-0"
+        )}>
+          {/* 背景图会通过 CSS 设置，这里作为背景容器 */}
         </div>
 
-        {/* ==================== 标题区域 ==================== */}
-        <div className="mt-[8vh] z-10 text-center">
-          {/* 副标题 */}
-          <div className="text-white/80 text-sm tracking-[2px] mb-1 font-light opacity-90">
-            银行开门红活动
-          </div>
-          {/* 主标题 */}
-          <div className={cn(styles.titleMain, "text-4xl font-black tracking-widest")}>
-            集五福 · 赢大奖
-          </div>
-        </div>
+        {/* ==================== 主内容区（9:16 比例居中） ==================== */}
+        <div 
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden"
+          style={{
+            aspectRatio: '9/16',
+            width: 'min(100%, calc(100vh * 9 / 16))',
+            height: 'min(100%, calc(100vw * 16 / 9))',
+            maxHeight: '100%',
+          }}
+        >
 
-        {/* ==================== 抽卡区域 ==================== */}
-        <div className="flex-1 w-full flex justify-center items-center relative z-10 perspective-[1200px]">
-          <Card 
-            isFlipped={isFlipped}        // 传递翻转状态
-            resultChar={currentResult}   // 传递抽到的文字
-            onDraw={drawCard}            // 点击时调用 drawCard
-            disabled={false}             // 是否禁用（目前未使用）
+        {/* ==================== 游戏页内容 ==================== */}
+        <div className={cn(
+          "absolute inset-0 flex flex-col transition-all duration-[600ms] ease-out",
+          gamePageReady ? "opacity-100 scale-100" : "opacity-0 scale-95"
+        )}>
+
+          {/* ==================== 调试面板 ==================== */}
+          <DebugPanel
+            testMode={testMode}
+            onTestModeChange={handleTestModeChange}
+            userPhone={userPhone}
+            collected={collected}
+            cardCounts={cardCounts}
+            onQuickLogin={quickLogin}
+            onSetCards={setCards}
+            onResetSmall={resetCards}
+            onResetLarge={resetAll}
+            onBossKey={bossKey}
           />
+
+          {/* ==================== 音乐按钮 ==================== */}
+          <button
+            onClick={toggleMusic}
+            className="absolute top-4 right-4 z-[200] bg-black/10 backdrop-blur-md text-white/80 w-10 h-10 rounded-full hover:bg-black/20 transition-all flex items-center justify-center"
+            aria-label={isMusicPlaying ? '关闭音乐' : '开启音乐'}
+          >
+            {isMusicPlaying ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          </button>
+
+          {/* ==================== 顶部Logo区域 ==================== */}
+          <div className="flex justify-end items-center px-2 pt-2 z-10">
+            {/* 银联logo - 锦绣中华 */}
+            <img
+              src="/images/campaign/design/unionpay-logo.png"
+              alt="银联"
+              className="h-7 object-contain"
+            />
+          </div>
+
+          {/* ==================== 标题区域 ==================== */}
+          <div className="mt-2 z-10 text-center px-2">
+            {/* 主标题 - 使用设计稿图片 */}
+            <img
+              src="/images/campaign/design/title.png"
+              alt="集福卡抽大奖"
+              className="w-full"
+            />
+            {/* 副标题 - 使用设计稿图片 */}
+            <img
+              src="/images/campaign/design/subtitle.png"
+              alt="农行哇宝请吃年夜饭啦"
+              className="w-full max-w-[240px] mx-auto -mt-8"
+            />
+          </div>
+
+          {/* ==================== 主抽卡区域 ==================== */}
+          <div className="flex-1 w-full relative z-10">
+            {/* 
+              卡片位置计算（基于 1080×1920 设计稿）:
+              - 卡片在设计稿中: x=191, y=477, 宽=688, 高=912
+              - 卡片中心: x=535 (49.5%), y=933 (48.6%)
+              - 卡片尺寸占比: 宽=63.7%, 高=47.5%
+            */}
+            <div 
+              className="absolute z-10"
+              style={{
+                left: '49.5%',
+                top: '38%',
+                transform: 'translate(-50%, -50%)',
+                width: '65%',
+                aspectRatio: '688/912',
+              }}
+            >
+              {/* 卡片组件 */}
+              <Card
+                drawPhase={drawPhase}
+                resultChar={currentResult}
+                onDraw={drawCard}
+                disabled={false}
+                hasDrawnToday={hasDrawnToday}
+              />
+
+
+              {/* 抽卡按钮 - 重叠在卡片底部 */}
+              <div className="absolute bottom-[5%] left-1/2 -translate-x-1/2 w-[90%] z-20">
+                <DrawButton
+                  onClick={drawCard}
+                  disabled={collected.every(Boolean)}
+                  hasDrawnToday={hasDrawnToday}
+                  isDrawing={drawPhase === 'spinning'}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ==================== 收集槽区域（固定在底部） ==================== */}
+          <div className="absolute bottom-[5%] left-0 right-0 z-10">
+            <CollectionSlots
+              collected={collected}
+              cardCounts={cardCounts}
+              onCardClick={(char) => {
+                setCurrentResult(char);
+                setShowResult(true);
+              }}
+            />
+          </div>
+
+          {/* ==================== 规则按钮 ==================== */}
+          <div className="w-full flex justify-center py-4 z-10">
+            <RulesButton onClick={() => setShowRules(true)} />
+          </div>
         </div>
 
-        {/* ==================== 收集槽区域 ==================== */}
-        <CollectionSlots 
-          collected={collected}  // 传递收集状态数组
-          cards={CARDS}          // 传递卡片文字数组
+        {/* ==================== 弹窗区域（移到外层，确保层级正确） ==================== */}
+        <LoginModal
+          isOpen={showLogin}
+          testMode={testMode}
+          onLogin={handleLogin}
+          onClose={() => setShowLogin(false)}
         />
 
-        {/* ==================== 弹窗区域 ==================== */}
-        
-        {/* 登录弹窗：用户首次进入时显示 */}
-        <LoginModal 
-          isOpen={showLogin}                      // 是否显示
-          onLogin={handleLogin}                   // 登录成功回调
-          onClose={() => setShowLogin(false)}     // 关闭回调
+        {currentResult && (
+          <ResultModal
+            isOpen={showResult}
+            char={currentResult}
+            onClose={closeResult}
+          />
+        )}
+
+        <FinalRewardModal
+          isOpen={showFinal}
+          userPhone={userPhone}
+          onClose={() => setShowFinal(false)}
         />
-        
-        {/* 结果弹窗：抽卡后显示结果 */}
-        <ResultModal 
-          isOpen={showResult}     // 是否显示
-          char={currentResult}    // 显示抽到的文字
-          onClose={closeResult}   // 关闭回调
+
+        <RulesModal
+          isOpen={showRules}
+          onClose={() => setShowRules(false)}
         />
-        
-        {/* 最终奖励弹窗：集齐 5 张后显示 */}
-        <FinalRewardModal 
-          isOpen={showFinal}                     // 是否显示
-          userPhone={userPhone}                  // 显示用户手机号
-          onClose={() => setShowFinal(false)}    // 关闭回调
+
+        {/* ==================== 背景音乐 ==================== */}
+        <audio
+          ref={audioRef}
+          src="/audio/bgm.mp3"
+          loop
+          preload="auto"
         />
+
+        {/* ==================== 抽卡旋转动画（全屏覆盖） ==================== */}
+        {showDrawAnimationVideo && (
+          <div className="absolute inset-0 z-30 pointer-events-none">
+            <video
+              key={drawAnimationVideoKey}
+              autoPlay
+              muted
+              playsInline
+              preload="auto"
+              className="w-full h-full object-cover"
+              style={{ objectPosition: 'center top' }}
+              onEnded={() => drawAnimationDoneRef.current?.()}
+              onError={() => drawAnimationDoneRef.current?.()}
+            >
+              <source src="/video/card-spin.webm" type="video/webm" />
+            </video>
+          </div>
+        )}
+
+
+        {/* ==================== 欢迎页（顶层） ==================== */}
+        {showWelcome && (
+          <div
+            className={cn(
+              "absolute inset-0 z-50 transition-all duration-[600ms] ease-out",
+              isTransitioning ? "opacity-0 scale-105" : "opacity-100 scale-100"
+            )}
+          >
+            {/* 欢迎页烟花视频背景 */}
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+            >
+              <source src="/video/fireworks-v3.m4v" type="video/mp4" />
+            </video>
+            {/* 点击进入按钮 - 带呼吸动画 */}
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center mb-[-5%]">
+              <img
+                src="/images/start-btn.png"
+                alt="立即参与"
+                onClick={handleStartGame}
+                className={cn(
+                  "w-[38%] max-w-[160px] cursor-pointer",
+                  styles.breathingBtn,
+                  isTransitioning && "opacity-0 translate-y-4"
+                )}
+              />
+            </div>
+          </div>
+        )}
+
+        </div>
       </div>
     </div>
   );

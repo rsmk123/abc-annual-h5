@@ -1,0 +1,25 @@
+{
+  "name": "abc-bank-h5-api",
+  "version": "1.0.0",
+  "description": "ABC银行集五福H5后端API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "dotenv": "^17.2.3",
+    "ioredis": "^5.3.2",
+    "joi": "^17.11.0",
+    "jsonwebtoken": "^9.0.2",
+    "koa": "^2.15.0",
+    "koa-bodyparser": "^4.4.0",
+    "koa-router": "^12.0.0",
+    "pg": "^8.11.3",
+    "tencentcloud-sdk-nodejs": "^4.0.0"
+  },
+  "devDependencies": {
+    "@serverless/tencent-scf": "^3.0.9",
+    "serverless": "^3.38.0"
+  }
+}

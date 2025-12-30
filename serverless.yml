@@ -1,0 +1,19 @@
+
+component: http
+name: http-nextjs
+app: my-nextjs-app-1519dc50
+
+inputs:
+  src:
+    dist: ./
+    hook: npm run build
+    exclude:
+      - .env
+  faas:
+    runtime: Nodejs12.16
+    framework: nextjs
+    name: ${name}
+  apigw:
+    protocols:
+      - http
+      - https

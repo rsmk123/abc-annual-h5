@@ -1,32 +1,95 @@
 import React from 'react';
-import styles from './campaign.module.css';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { CARDS, CardChar } from '@/lib/cardConfig';
 
 interface CollectionSlotsProps {
   collected: boolean[];
-  cards: string[];
+  cardCounts?: number[];  // 每张卡的数量（可选）
+  onCardClick?: (char: CardChar) => void;  // 点击已收集卡片的回调
 }
 
-export const CollectionSlots: React.FC<CollectionSlotsProps> = ({ collected, cards }) => {
+// 卡槽背景图（1-5对应马上发财哇）
+const SLOT_BGS = [
+  '/images/campaign/slots-new/slot-1.png', // 马
+  '/images/campaign/slots-new/slot-2.png', // 上
+  '/images/campaign/slots-new/slot-3.png', // 发
+  '/images/campaign/slots-new/slot-4.png', // 财
+  '/images/campaign/slots-new/slot-5.png', // 哇
+];
+
+// 收集后显示的蛙宝IP形象
+const WABAO_IMAGES = [
+  '/images/campaign/slots-new/ma.png',    // 马
+  '/images/campaign/slots-new/shang.png', // 上
+  '/images/campaign/slots-new/fa.png',    // 发
+  '/images/campaign/slots-new/cai.png',   // 财
+  '/images/campaign/slots-new/wa.png',    // 哇
+];
+
+// 未收集时的阴影
+const SHADOW_IMAGE = '/images/campaign/slots-new/shadow.png';
+
+export const CollectionSlots: React.FC<CollectionSlotsProps> = ({ collected, cardCounts, onCardClick }) => {
   return (
-    <div className="w-full px-5 pb-10 z-10">
-      <div className="flex justify-between bg-black/20 p-4 rounded-2xl backdrop-blur-[5px] border border-white/10">
-        {cards.map((char, idx) => (
-          <div 
-            key={idx}
-            className={cn(
-              "w-[18%] aspect-[3/4] rounded-lg flex justify-center items-center text-2xl font-bold transition-all duration-400 ease-out relative",
-              collected[idx] 
-                ? cn(styles.slotActive, "text-[#d92027] border-2 border-[#f0c676] -translate-y-1") 
-                : "bg-white/5 border border-dashed border-[#f0c676]/30 text-[#f0c676]/20"
-            )}
-          >
-            {char}
-          </div>
-        ))}
+    <div className="w-full px-3 pb-4 z-10">
+      {/* 5个卡槽横排 */}
+      <div className="flex justify-between gap-1">
+        {CARDS.map((char, idx) => {
+          const isCollected = collected[idx];
+          const count = cardCounts?.[idx] || 0;
+
+          return (
+            <div 
+              key={idx} 
+              className={cn(
+                "flex-1 relative",
+                isCollected && "cursor-pointer active:scale-95 transition-transform"
+              )}
+              onClick={() => {
+                if (isCollected && onCardClick) {
+                  onCardClick(char);
+                }
+              }}
+            >
+              {/* 卡槽背景 */}
+              <img
+                src={SLOT_BGS[idx]}
+                alt=""
+                className="w-full"
+              />
+
+              {/* 内容：阴影或蛙宝 */}
+              <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-18%' }}>
+                <img
+                  src={isCollected ? WABAO_IMAGES[idx] : SHADOW_IMAGE}
+                  alt={char}
+                  className={cn(
+                    "w-[75%] h-auto object-contain",
+                    isCollected && "animate-[bounceIn_0.5s_ease-out]",
+                    !isCollected && "opacity-50"
+                  )}
+                />
+              </div>
+
+              {/* 数量角标 - 奶油色圆形 */}
+              {count > 1 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#FFF8E7] rounded-full flex items-center justify-center text-[#810010] text-[11px] font-bold shadow-md border-2 border-[#F5E6C8]">
+                  {count}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      <div className="text-center text-white/50 text-xs mt-4">
-        集齐5张卡即可参与开奖
+
+      {/* 底部提示文案 - 使用设计稿图片 */}
+      <div className="text-center mt-3">
+        <img
+          src="/images/campaign/design/hint-text.png"
+          alt="集齐5张卡即可参与抽奖"
+          className="h-5 mx-auto"
+        />
       </div>
     </div>
   );

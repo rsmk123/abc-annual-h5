@@ -1,8 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-
-if (!API_BASE) {
-  throw new Error('NEXT_PUBLIC_API_BASE_URL environment variable is not configured');
-}
+// API 基础路径：
+// - 开发环境为空，使用 Next.js rewrites 代理
+// - 生产环境使用完整的云函数 URL
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 // 获取token
 function getToken(): string | null {
