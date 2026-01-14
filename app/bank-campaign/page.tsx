@@ -15,7 +15,17 @@ import { RulesModal } from '@/components/bank-campaign/RulesModal';
 import { DebugPanel } from '@/components/bank-campaign/DebugPanel';
 import { DrawButton, RulesButton } from '@/components/bank-campaign/DrawButton';
 import { ClientPortal } from '@/components/bank-campaign/ClientPortal';
+import { FrameAnimation } from '@/components/bank-campaign/FrameAnimation';
 import { cn } from '@/lib/utils';
+
+// 卡片字符到序列帧文件夹的映射
+const CARD_FRAME_FOLDERS: Record<string, string> = {
+  '马': 'ma',
+  '上': 'shang',
+  '发': 'fa',
+  '财': 'cai',
+  '蛙': 'wa',
+};
 import { CARDS, CardChar } from '@/lib/cardConfig';
 import { getUserStatus, drawCard as drawCardApi } from '@/lib/api';
 
@@ -300,7 +310,7 @@ export default function BankCampaignPage() {
     // 1. 开始旋转动画
     setDrawPhase('spinning');
 
-    // 等待抽卡视频动画播放结束（兜底 3.5 秒，视频约3秒）
+    // 等待抽卡序列帧动画播放结束（兜底 4 秒，75帧/25fps = 3秒）
     const waitForDrawAnimationEnd = () =>
       new Promise<void>((resolve) => {
         let finished = false;
@@ -311,12 +321,11 @@ export default function BankCampaignPage() {
           finished = true;
           if (timeoutId) clearTimeout(timeoutId);
           drawAnimationDoneRef.current = null;
-          // setShowDrawAnimationVideo(false); // 保持视频最后帧，弹窗关闭后再隐藏
           resolve();
         };
 
         drawAnimationDoneRef.current = finish;
-        timeoutId = setTimeout(finish, 3500);
+        timeoutId = setTimeout(finish, 4000);
       });
 
     // 2. 执行抽卡：测试模式用本地算法，非测试模式调用后端 API
@@ -415,7 +424,7 @@ export default function BankCampaignPage() {
    */
   const closeResult = () => {
     setShowResult(false);
-    setShowDrawAnimationVideo(false); // 关闭弹窗时隐藏视频
+    setShowDrawAnimationVideo(false); // 关闭弹窗时隐藏序列帧动画
 
     // 重置抽卡状态
     setTimeout(() => {
@@ -775,22 +784,22 @@ export default function BankCampaignPage() {
           preload="auto"
         />
 
-        {/* ==================== 抽卡旋转动画（全屏覆盖） ==================== */}
-        {showDrawAnimationVideo && (
+        {/* ==================== 抽卡旋转动画（全屏覆盖）- 序列帧版本 ==================== */}
+        {showDrawAnimationVideo && currentResult && (
           <div className="absolute inset-0 z-30 pointer-events-none">
-            <video
+            <FrameAnimation
               key={drawAnimationVideoKey}
-              autoPlay
-              muted
-              playsInline
-              preload="auto"
-              className="w-full h-full object-cover"
-              style={{ objectPosition: 'center top' }}
-              onEnded={() => drawAnimationDoneRef.current?.()}
-              onError={() => drawAnimationDoneRef.current?.()}
-            >
-              <source src="/video/card-spin.webm" type="video/webm" />
-            </video>
+              framePrefix="/images/frames/card-spin/common/集福卡_"
+              totalFrames={46}
+              fps={25}
+              loop={false}
+              secondPrefix={`/images/frames/card-spin/${CARD_FRAME_FOLDERS[currentResult]}/集福卡_`}
+              secondStartIndex={46}
+              secondFrames={29}
+              onComplete={() => drawAnimationDoneRef.current?.()}
+              className="w-full h-full"
+              style={{ objectFit: 'cover' }}
+            />
           </div>
         )}
 
