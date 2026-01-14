@@ -113,14 +113,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
     }
 
     setLoggingIn(true);
+    console.log('[登录] 开始验证...', { phone, code: code.length + '位' });
+    const startTime = Date.now();
+    
     try {
       const result = await verifyCode(phone, code, getDeviceId());
+      console.log('[登录] 验证完成，耗时:', Date.now() - startTime, 'ms');
+      
       if (result.success) {
         onLogin(phone);
       } else {
         alert(result.error || '验证失败，请重试');
       }
     } catch (error) {
+      console.error('[登录] 验证失败:', error);
       alert(error instanceof Error ? error.message : '验证失败，请重试');
     } finally {
       setLoggingIn(false);
@@ -214,14 +220,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
             {/* 登录按钮点击区域 */}
             <button 
               className={cn(
-                "absolute bottom-[4%] left-[10%] right-[10%] h-[12%] cursor-pointer z-10 flex items-center justify-center",
-                loggingIn ? "bg-black/30 rounded-full" : "bg-transparent active:opacity-80"
+                "absolute bottom-[4%] left-[10%] right-[10%] h-[12%] cursor-pointer z-10 flex items-center justify-center rounded-full overflow-hidden",
+                loggingIn ? "pointer-events-none" : "active:opacity-80"
               )}
               onClick={handleLogin}
               disabled={loggingIn}
             >
+              {/* 按钮灰色遮罩 - loggingIn 时立即变灰 */}
               {loggingIn && (
-                <span className="text-white text-sm font-medium animate-pulse">登录中...</span>
+                <div className="absolute inset-0 bg-black/60 rounded-full" />
               )}
             </button>
         </div>
@@ -242,6 +249,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
         isOpen={showRules} 
         onClose={() => setShowRules(false)} 
       />
+
+      {/* Loading 浮层 */}
+      {loggingIn && (
+        <div className="fixed inset-0 z-[500] flex items-center justify-center">
+          <div className="bg-black/80 text-white px-6 py-4 rounded-lg flex items-center gap-3 shadow-xl">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            <span className="text-sm">登录中...</span>
+          </div>
+        </div>
+      )}
     </div>
     </ClientPortal>
   );

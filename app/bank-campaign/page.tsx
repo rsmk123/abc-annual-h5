@@ -126,20 +126,44 @@ export default function BankCampaignPage() {
       setTestMode(true);
     }
 
+    // 预加载抽卡序列帧（马上发财蛙）
+    const preloadCardSpinFrames = () => {
+      console.log('[预加载] 开始预加载抽卡序列帧...');
+      // 共用前46帧
+      for (let i = 0; i < 46; i++) {
+        const img = new Image();
+        img.src = `/images/frames/card-spin/common/集福卡_${String(i).padStart(5, '0')}.png`;
+      }
+      // 各卡片后29帧
+      const cardFolders = ['ma', 'shang', 'fa', 'cai', 'wa'];
+      cardFolders.forEach(folder => {
+        for (let i = 46; i < 75; i++) {
+          const img = new Image();
+          img.src = `/images/frames/card-spin/${folder}/集福卡_${String(i).padStart(5, '0')}.png`;
+        }
+      });
+      console.log('[预加载] 抽卡序列帧预加载完成（46共用 + 5x29卡片 = 191帧）');
+    };
+
     // 延迟预加载骑马序列帧（127帧）
     const preloadHorseFrames = () => {
+      console.log('[预加载] 开始预加载骑马序列帧...');
       for (let i = 0; i < 127; i++) {
         const img = new Image();
         img.src = `/images/frames/horse-ride/骑马青蛙_${String(i).padStart(5, '0')}.png`;
       }
+      console.log('[预加载] 骑马序列帧预加载完成（127帧）');
     };
 
-    // 等其他资源加载完成后再预加载
+    // 页面加载后立即预加载抽卡序列帧
+    setTimeout(preloadCardSpinFrames, 500);
+
+    // 等其他资源加载完成后再预加载骑马序列帧
     if ('requestIdleCallback' in window) {
       (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
-        .requestIdleCallback(preloadHorseFrames, { timeout: 3000 });
+        .requestIdleCallback(preloadHorseFrames, { timeout: 5000 });
     } else {
-      setTimeout(preloadHorseFrames, 2000);
+      setTimeout(preloadHorseFrames, 3000);
     }
   }, []);
 
@@ -292,6 +316,7 @@ export default function BankCampaignPage() {
 
     // 测试模式：跳过每日抽卡限制
     if (!testMode && hasDrawnToday) {
+      showToastMessage('每天可抽卡一次，请明天再来哦');
       return;
     }
 
@@ -741,6 +766,17 @@ export default function BankCampaignPage() {
           isOpen={showRules}
           onClose={() => setShowRules(false)}
         />
+
+        {/* ==================== Toast 提示浮层 ==================== */}
+        {showToast && (
+          <ClientPortal>
+            <div className="fixed inset-0 z-[600] flex items-center justify-center pointer-events-none">
+              <div className="bg-black/80 text-white px-6 py-4 rounded-lg shadow-xl max-w-[280px] text-center">
+                <span className="text-sm">{toastMessage}</span>
+              </div>
+            </div>
+          </ClientPortal>
+        )}
 
         {/* ==================== 欢迎页（顶层）- Portal 到 body，异形屏也真正全屏 ==================== */}
         {showWelcome && (
