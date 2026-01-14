@@ -650,7 +650,11 @@ export default function BankCampaignPage() {
           </div>
 
           {/* ==================== 主抽卡区域 ==================== */}
-          <div className="flex-1 w-full relative z-10">
+          {/* 播放最终动画时渐变隐藏，1秒过渡 */}
+          <div 
+            className="flex-1 w-full relative z-10 transition-opacity duration-1000"
+            style={{ opacity: showFinal ? 0 : 1 }}
+          >
             {/* 
               卡片位置计算（基于 1080×1920 设计稿）:
               - 卡片在设计稿中: x=191, y=477, 宽=688, 高=912
@@ -690,15 +694,19 @@ export default function BankCampaignPage() {
           </div>
 
           {/* ==================== 收集槽区域（固定在底部） ==================== */}
-          <div className="absolute bottom-[5%] left-0 right-0 z-10">
+          {/* 播放最终动画时渐变隐藏，1秒过渡 */}
+          <div 
+            className="absolute bottom-[5%] left-0 right-0 z-10 transition-opacity duration-1000"
+            style={{ opacity: showFinal ? 0 : 1 }}
+          >
             <CollectionSlots
               collected={collected}
               cardCounts={cardCounts}
               onCardClick={(char) => {
                 setCurrentResult(char);
                 setShowResult(true);
-              }}
-            />
+            }}
+          />
           </div>
 
           {/* ==================== 规则按钮 ==================== */}
