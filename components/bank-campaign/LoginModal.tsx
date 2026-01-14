@@ -4,6 +4,8 @@ import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { sendCode, verifyCode } from '@/lib/api';
 
+import { RulesModal } from './RulesModal';
+
 interface LoginModalProps {
   isOpen: boolean;
   testMode?: boolean; // 测试模式：跳过API验证
@@ -16,7 +18,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
   const [code, setCode] = useState('');
   const [countdown, setCountdown] = useState(0);
   const [sending, setSending] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
   const [agreed, setAgreed] = useState(true);
+  const [showRules, setShowRules] = useState(false);
 
   // 生成设备ID
   const getDeviceId = () => {
@@ -108,6 +112,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
       return;
     }
 
+    setLoggingIn(true);
     try {
       const result = await verifyCode(phone, code, getDeviceId());
       if (result.success) {
@@ -117,12 +122,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
       }
     } catch (error) {
       alert(error instanceof Error ? error.message : '验证失败，请重试');
+    } finally {
+      setLoggingIn(false);
     }
   };
 
   return (
-    <div 
-      className={cn(
+    <ClientPortal>
+      <div 
+        className={cn(
         styles.modalMask,
         "fixed inset-0 z-[200] flex justify-center items-center",
         "transition-opacity duration-300",
@@ -181,17 +189,41 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
             </div>
           </div>
 
-          {/* 复选框点击区域 */}
-          <div 
-            className="absolute bottom-[18%] left-[8%] right-[8%] h-[6%] flex items-center justify-center cursor-pointer"
-            onClick={() => setAgreed(!agreed)}
-          />
+          {/* 复选框和协议文字 */}
+          <div className="absolute bottom-[26%] left-[8%] right-[8%] h-[6%] flex items-center justify-center gap-2">
+            {/* 勾选框 */}
+            <div 
+              className={cn(
+                "w-4 h-4 rounded-sm border-2 flex items-center justify-center transition-colors duration-200",
+                agreed ? "bg-[#1890ff] border-[#1890ff]" : "bg-white border-gray-300"
+              )}
+              onClick={() => setAgreed(!agreed)}
+            >
+              {agreed && (
+                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            {/* 协议文字 */}
+            <span className="text-white text-[12px] cursor-pointer" onClick={() => setShowRules(true)}>
+              我已阅读并知悉<span className="text-[#1890ff] underline">本活动详情</span>
+            </span>
+          </div>
 
-          {/* 登录按钮点击区域 */}
-          <button 
-            className="absolute bottom-[4%] left-[10%] right-[10%] h-[12%] bg-transparent cursor-pointer active:opacity-80 z-10"
-            onClick={handleLogin}
-          />
+            {/* 登录按钮点击区域 */}
+            <button 
+              className={cn(
+                "absolute bottom-[4%] left-[10%] right-[10%] h-[12%] cursor-pointer z-10 flex items-center justify-center",
+                loggingIn ? "bg-black/30 rounded-full" : "bg-transparent active:opacity-80"
+              )}
+              onClick={handleLogin}
+              disabled={loggingIn}
+            >
+              {loggingIn && (
+                <span className="text-white text-sm font-medium animate-pulse">登录中...</span>
+              )}
+            </button>
         </div>
 
         {/* 关闭按钮 */}
@@ -204,6 +236,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
           </svg>
         </button>
       </div>
+
+      {/* 活动详情弹窗 */}
+      <RulesModal 
+        isOpen={showRules} 
+        onClose={() => setShowRules(false)} 
+      />
     </div>
+    </ClientPortal>
   );
 };

@@ -14,8 +14,10 @@ import { FinalRewardModal } from '@/components/bank-campaign/FinalRewardModal';
 import { RulesModal } from '@/components/bank-campaign/RulesModal';
 import { DebugPanel } from '@/components/bank-campaign/DebugPanel';
 import { DrawButton, RulesButton } from '@/components/bank-campaign/DrawButton';
+import { ClientPortal } from '@/components/bank-campaign/ClientPortal';
 import { cn } from '@/lib/utils';
 import { CARDS, CardChar } from '@/lib/cardConfig';
+import { getUserStatus, drawCard as drawCardApi } from '@/lib/api';
 
 // ============================================================
 // 主组件：集五福游戏页面
@@ -65,6 +67,13 @@ export default function BankCampaignPage() {
   const [showResult, setShowResult] = useState(false);
   const [showFinal, setShowFinal] = useState(false);
   const [showRules, setShowRules] = useState(false);
+
+  // 最终弹窗显示状态（动画播完后显示）
+  const [showFinalModal, setShowFinalModal] = useState(false);
+
+  // Toast 提示状态
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   // 测试模式状态（默认开启，方便UI测试）
   const [testMode, setTestMode] = useState(true);
@@ -144,12 +153,50 @@ export default function BankCampaignPage() {
   };
 
   /**
+   * 显示 Toast 提示
+   */
+  const showToastMessage = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2500);
+  };
+
+  /**
    * 处理用户登录
    */
-  const handleLogin = (phone: string) => {
+  const handleLogin = async (phone: string) => {
     setUserPhone(phone);
     localStorage.setItem('abc_user_phone', phone);
     setShowLogin(false);
+
+    // 非测试模式：从数据库加载卡片状态
+    if (!testMode) {
+      try {
+        const status = await getUserStatus() as {
+          success: boolean;
+          data?: {
+            cards: boolean[];
+            collectedCount: number;
+            isCompleted: boolean;
+            lastDrawAt: string | null;
+          };
+        };
+        if (status.data) {
+          setCollected(status.data.cards);
+          // 检查今日是否已抽卡
+          if (status.data.lastDrawAt) {
+            const lastDraw = new Date(status.data.lastDrawAt);
+            const today = new Date();
+            // 比较北京时间的日期
+            if (lastDraw.toDateString() === today.toDateString()) {
+              setHasDrawnToday(true);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load user status:', e);
+      }
+    }
   };
 
   /**
@@ -256,36 +303,89 @@ export default function BankCampaignPage() {
         timeoutId = setTimeout(finish, 3500);
       });
 
+    // 2. 执行抽卡：测试模式用本地算法，非测试模式调用后端 API
+    let newIndex: number;
+    let apiCards: boolean[] | null = null;
+
+    if (testMode) {
+      // 测试模式：使用本地算法
+      newIndex = getLuckyIndex();
+    } else {
+      // 非测试模式：调用后端 API
+      try {
+        const deviceId = localStorage.getItem('deviceId') || 'unknown';
+        const result = await drawCardApi(deviceId) as {
+          success: boolean;
+          data?: {
+            cardIndex: number;
+            cardText: string;
+            isNew: boolean;
+            cards: boolean[];
+            isCompleted: boolean;
+          };
+          error?: string;
+        };
+
+        if (!result.success || !result.data) {
+          // API 失败（如今日已抽卡）
+          setDrawPhase('idle');
+          if (result.error?.includes('今天已经抽过') || result.error?.includes('明天再来')) {
+            setHasDrawnToday(true);
+            showToastMessage('每天可抽卡一次，请明天再来哦');
+          } else {
+            showToastMessage(result.error || '抽卡失败，请稍后重试');
+          }
+          return;
+        }
+
+        newIndex = result.data.cardIndex;
+        apiCards = result.data.cards;
+        setHasDrawnToday(true); // 后端已记录
+      } catch (e: unknown) {
+        const errorMessage = e instanceof Error ? e.message : '未知错误';
+        console.error('Draw card API failed:', errorMessage);
+        setDrawPhase('idle');
+        
+        // 检查是否是"今日已抽卡"错误
+        if (errorMessage.includes('今天已经抽过') || errorMessage.includes('明天再来')) {
+          setHasDrawnToday(true);
+          showToastMessage('每天可抽卡一次，请明天再来哦');
+        } else {
+          showToastMessage('网络错误，请稍后重试');
+        }
+        return;
+      }
+    }
+
+    const char = CARDS[newIndex] as CardChar;
+    
+    // 3. 开始播放动画
     setShowDrawAnimationVideo(true);
     setDrawAnimationVideoKey((k) => k + 1);
-
-    // 2. 执行抽卡算法
-    const newIndex = getLuckyIndex();
-    const char = CARDS[newIndex] as CardChar;
-
-    // 3. 记录今日已抽卡（测试模式下不记录，可以无限抽）
-    if (!testMode) {
-      const today = new Date().toDateString();
-      localStorage.setItem('lastDrawDate', today);
-      setHasDrawnToday(true);
-    }
+    // 提前设置结果，让动画组件知道播放哪个卡片的序列帧（如果有两段式）
+    setCurrentResult(char);
 
     // 4. 等待动画完成（视频结束）
     await waitForDrawAnimationEnd();
 
     // 5. 显示结果
     setDrawPhase('revealing');
-    setCurrentResult(char);
 
     // 6. 更新收集状态
-    const newCollected = [...collected];
-    newCollected[newIndex] = true;
-    setCollected(newCollected);
+    if (apiCards) {
+      // 非测试模式：使用后端返回的数据
+      setCollected(apiCards);
+    } else {
+      // 测试模式：本地更新
+      const newCollected = [...collected];
+      newCollected[newIndex] = true;
+      setCollected(newCollected);
 
-    // 更新卡片数量
-    const newCounts = [...cardCounts];
-    newCounts[newIndex] += 1;
-    setCardCounts(newCounts);
+      // 更新卡片数量（仅测试模式）
+      const newCounts = [...cardCounts];
+      newCounts[newIndex] += 1;
+      setCardCounts(newCounts);
+    }
 
     // 7. 显示结果弹窗
     setTimeout(() => {
@@ -609,6 +709,48 @@ export default function BankCampaignPage() {
           onClose={() => setShowRules(false)}
         />
 
+        {/* ==================== 欢迎页（顶层）- Portal 到 body，异形屏也真正全屏 ==================== */}
+        {showWelcome && (
+          <ClientPortal>
+            <div
+              className={cn(
+                "fixed inset-0 z-[1000] transition-all duration-[600ms] ease-out",
+                isTransitioning ? "opacity-0 scale-105" : "opacity-100 scale-100"
+              )}
+            >
+              {/* 欢迎页烟花视频背景 - 放大充满屏幕 */}
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ 
+                  minWidth: '100%', 
+                  minHeight: '100%',
+                  objectFit: 'cover',
+                }}
+              >
+                <source src="/video/fireworks-v3.m4v" type="video/mp4" />
+              </video>
+              
+              {/* 点击进入按钮 - 带呼吸动画，固定在底部 */}
+              <div className="absolute bottom-[8%] left-0 right-0 flex justify-center">
+                <img
+                  src="/images/start-btn.png"
+                  alt="立即参与"
+                  onClick={handleStartGame}
+                  className={cn(
+                    "w-[38%] max-w-[160px] cursor-pointer",
+                    styles.breathingBtn,
+                    isTransitioning && "opacity-0 translate-y-4"
+                  )}
+                />
+              </div>
+            </div>
+          </ClientPortal>
+        )}
+
         {/* ==================== 背景音乐 ==================== */}
         <audio
           ref={audioRef}
@@ -633,41 +775,6 @@ export default function BankCampaignPage() {
             >
               <source src="/video/card-spin.webm" type="video/webm" />
             </video>
-          </div>
-        )}
-
-
-        {/* ==================== 欢迎页（顶层） ==================== */}
-        {showWelcome && (
-          <div
-            className={cn(
-              "absolute inset-0 z-50 transition-all duration-[600ms] ease-out",
-              isTransitioning ? "opacity-0 scale-105" : "opacity-100 scale-100"
-            )}
-          >
-            {/* 欢迎页烟花视频背景 */}
-            <video
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            >
-              <source src="/video/fireworks-v3.m4v" type="video/mp4" />
-            </video>
-            {/* 点击进入按钮 - 带呼吸动画 */}
-            <div className="absolute bottom-0 left-0 right-0 flex justify-center mb-[-5%]">
-              <img
-                src="/images/start-btn.png"
-                alt="立即参与"
-                onClick={handleStartGame}
-                className={cn(
-                  "w-[38%] max-w-[160px] cursor-pointer",
-                  styles.breathingBtn,
-                  isTransitioning && "opacity-0 translate-y-4"
-                )}
-              />
-            </div>
           </div>
         )}
 
