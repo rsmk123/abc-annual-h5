@@ -3,6 +3,7 @@ import Image from 'next/image';
 import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { CardChar, getResultModalImage } from '@/lib/cardConfig';
+import { ClientPortal } from './ClientPortal';
 
 interface ResultModalProps {
   isOpen: boolean;
@@ -14,20 +15,21 @@ export const ResultModal: React.FC<ResultModalProps> = ({ isOpen, char, onClose 
   const resultModalImage = char ? getResultModalImage(char) : '';
 
   return (
-    <div 
-      className={cn(
-        styles.modalMask,
-        "fixed inset-0 z-[200] flex flex-col justify-center items-center",
-        "transition-opacity duration-300",
-        isOpen && char ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      )}
-      onClick={onClose}
-    >
-      {/* 弹窗容器 - 两张全尺寸图片重叠 */}
+    <ClientPortal>
       <div 
-        className="relative w-full h-full max-w-[480px] flex items-center justify-center"
-        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          styles.modalMask,
+          "fixed inset-0 z-[1200] flex flex-col justify-center items-center",
+          "transition-opacity duration-300",
+          isOpen && char ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={onClose}
       >
+        {/* 弹窗容器 - 两张全尺寸图片重叠 */}
+        <div 
+          className="relative w-full h-full max-w-[480px] flex items-center justify-center"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* 背景图层 */}
         <div className="absolute inset-0">
           <Image
@@ -58,5 +60,6 @@ export const ResultModal: React.FC<ResultModalProps> = ({ isOpen, char, onClose 
         </button>
       </div>
     </div>
+    </ClientPortal>
   );
 };

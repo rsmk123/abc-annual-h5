@@ -115,6 +115,22 @@ export default function BankCampaignPage() {
     if (savedTestMode === 'true') {
       setTestMode(true);
     }
+
+    // 延迟预加载骑马序列帧（127帧）
+    const preloadHorseFrames = () => {
+      for (let i = 0; i < 127; i++) {
+        const img = new Image();
+        img.src = `/images/frames/horse-ride/骑马青蛙_${String(i).padStart(5, '0')}.png`;
+      }
+    };
+
+    // 等其他资源加载完成后再预加载
+    if ('requestIdleCallback' in window) {
+      (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
+        .requestIdleCallback(preloadHorseFrames, { timeout: 3000 });
+    } else {
+      setTimeout(preloadHorseFrames, 2000);
+    }
   }, []);
 
   // ========================================

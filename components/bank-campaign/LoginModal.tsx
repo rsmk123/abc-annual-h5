@@ -3,7 +3,7 @@ import Image from 'next/image';
 import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { sendCode, verifyCode } from '@/lib/api';
-
+import { ClientPortal } from './ClientPortal';
 import { RulesModal } from './RulesModal';
 
 interface LoginModalProps {
