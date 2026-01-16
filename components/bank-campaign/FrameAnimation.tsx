@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { getCachedImage, preloadImage } from '@/lib/imageCache';
 
 interface FrameAnimationProps {
   /** 帧图片路径前缀，如 '/images/frames/card-spin/集福卡_' */
@@ -13,6 +14,10 @@ interface FrameAnimationProps {
   loop?: boolean;
   /** 动画完成回调 */
   onComplete?: () => void;
+  /** 动画快完成时的回调（用于提前显示弹窗等） */
+  onNearComplete?: () => void;
+  /** 触发 onNearComplete 的剩余帧数，默认 12 帧（约 0.5 秒） */
+  nearCompleteFrames?: number;
   /** 额外的 className */
   className?: string;
   /** 额外的 style */
@@ -39,6 +44,8 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
   fps = 25,
   loop = false,
   onComplete,
+  onNearComplete,
+  nearCompleteFrames = 12,
   className = '',
   style = {},
   secondPrefix,
@@ -53,10 +60,13 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
   const animationRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef(0);
   const isFinishedRef = useRef(false);
+  const nearCompleteTriggeredRef = useRef(false);
   
   // 用 ref 保存回调，避免依赖变化导致重新播放
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
+  const onNearCompleteRef = useRef(onNearComplete);
+  onNearCompleteRef.current = onNearComplete;
 
   // 计算实际总帧数
   const actualTotalFrames = totalFrames + secondFrames;
@@ -74,7 +84,7 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
     return `${framePrefix}${paddedIndex}${frameExtension}`;
   }, [framePrefix, frameExtension, secondPrefix, totalFrames, actualSecondStartIndex]);
 
-  // 预加载所有帧（包括两段）
+  // 预加载所有帧（包括两段）- 优先使用全局缓存
   useEffect(() => {
     let isMounted = true;
     const loadedImages: HTMLImageElement[] = [];
@@ -86,43 +96,74 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
     isFinishedRef.current = false;
     frameIndexRef.current = 0;
 
-    const loadImage = (index: number): Promise<void> => {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          if (isMounted) {
-            loadedImages[index] = img;
-            loadedCount++;
-            // 第一帧加载完成后立即通知
-            if (index === 0) {
-              setFirstFrameReady(true);
-            }
-            if (loadedCount === actualTotalFrames) {
-              setImages(loadedImages);
-              setIsLoaded(true);
-            }
-          }
-          resolve();
-        };
-        img.onerror = () => {
-          console.warn(`Failed to load frame: ${getFramePath(index)}`);
+    const loadImage = async (index: number): Promise<void> => {
+      const src = getFramePath(index);
+      
+      // 优先从全局缓存获取
+      let img = getCachedImage(src);
+      
+      if (img) {
+        // 缓存命中，直接使用
+        if (isMounted) {
+          loadedImages[index] = img;
           loadedCount++;
+          if (index === 0) {
+            setFirstFrameReady(true);
+          }
           if (loadedCount === actualTotalFrames) {
             setImages(loadedImages);
             setIsLoaded(true);
           }
-          resolve();
-        };
-        img.src = getFramePath(index);
-      });
+        }
+        return;
+      }
+      
+      // 缓存未命中，通过 preloadImage 加载（会自动存入缓存）
+      try {
+        img = await preloadImage(src);
+        if (isMounted) {
+          loadedImages[index] = img;
+          loadedCount++;
+          if (index === 0) {
+            setFirstFrameReady(true);
+          }
+          if (loadedCount === actualTotalFrames) {
+            setImages(loadedImages);
+            setIsLoaded(true);
+          }
+        }
+      } catch {
+        console.warn(`Failed to load frame: ${src}`);
+        loadedCount++;
+        if (loadedCount === actualTotalFrames) {
+          setImages(loadedImages);
+          setIsLoaded(true);
+        }
+      }
     };
 
-    // 优先加载第一帧，然后并行加载其他帧
-    loadImage(0).then(() => {
-      Promise.all(
-        Array.from({ length: actualTotalFrames - 1 }, (_, i) => loadImage(i + 1))
-      );
-    });
+    // 检查是否所有帧都已缓存
+    const allCached = Array.from({ length: actualTotalFrames }, (_, i) => 
+      getCachedImage(getFramePath(i))
+    ).every(Boolean);
+
+    if (allCached) {
+      // 全部缓存命中，同步加载
+      console.log('[FrameAnimation] 全部缓存命中，立即播放');
+      for (let i = 0; i < actualTotalFrames; i++) {
+        loadedImages[i] = getCachedImage(getFramePath(i))!;
+      }
+      setImages(loadedImages);
+      setFirstFrameReady(true);
+      setIsLoaded(true);
+    } else {
+      // 部分未缓存，优先加载第一帧
+      loadImage(0).then(() => {
+        Promise.all(
+          Array.from({ length: actualTotalFrames - 1 }, (_, i) => loadImage(i + 1))
+        );
+      });
+    }
 
     return () => {
       isMounted = false;
@@ -172,6 +213,7 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
     frameIndexRef.current = 0;
     lastFrameTimeRef.current = 0;
     isFinishedRef.current = false;
+    nearCompleteTriggeredRef.current = false;
 
     const animate = (timestamp: number) => {
       if (isFinishedRef.current) return;
@@ -194,9 +236,17 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
         frameIndexRef.current++;
         lastFrameTimeRef.current = timestamp;
 
+        // 检查是否快完成（剩余帧数 <= nearCompleteFrames）
+        const remainingFrames = actualTotalFrames - frameIndexRef.current;
+        if (!nearCompleteTriggeredRef.current && remainingFrames <= nearCompleteFrames) {
+          nearCompleteTriggeredRef.current = true;
+          onNearCompleteRef.current?.();
+        }
+
         if (frameIndexRef.current >= actualTotalFrames) {
           if (loop) {
             frameIndexRef.current = 0;
+            nearCompleteTriggeredRef.current = false; // 循环时重置
           } else {
             isFinishedRef.current = true;
             onCompleteRef.current?.(); // 使用 ref 调用回调

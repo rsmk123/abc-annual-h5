@@ -88,12 +88,14 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
         }}
         onClick={handleClose}
       >
-        {/* 序列帧容器 - 居中显示 */}
+        {/* 9:16 核心内容区 - 与主页面保持一致的比例 */}
         <div 
-          className="relative w-full h-full flex items-center justify-center"
+          className="relative"
           style={{
-            maxWidth: '100vw',
-            maxHeight: '100vh',
+            aspectRatio: '9/16',
+            width: 'min(100%, calc(100vh * 9 / 16))',
+            height: 'min(100%, calc(100vw * 16 / 9))',
+            maxHeight: '100%',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -105,40 +107,38 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
             fps={15}
             loop={false}
             onComplete={finishAnimation}
-            className="w-full h-full"
+            className="absolute inset-0 w-full h-full"
             style={{
               objectFit: 'contain',
             }}
           />
 
-          {/* 手机号显示 - 在滚动区域上方 */}
+          {/* 手机号显示 - 在红色区域上方，使用百分比定位 */}
           {showScrollArea && userPhone && (
             <div 
               className="absolute text-center transition-opacity duration-500"
               style={{
-                top: '58%',
+                top: '66%',
                 left: '50%',
                 transform: 'translateX(-50%)',
                 opacity: showScrollArea ? 1 : 0,
               }}
             >
-              <span className="text-yellow-400 text-sm font-medium">
-                {maskPhone(userPhone)}
+              <span className="text-white text-base font-bold drop-shadow-lg">
+                用户: {maskPhone(userPhone)}
               </span>
             </div>
           )}
 
-          {/* 活动规则滚动区域 - 提前1秒渐现 */}
+          {/* 活动规则滚动区域 - 百分比定位，随9:16区域自适应缩放 */}
           <div 
             className="absolute overflow-hidden transition-opacity duration-500"
             style={{
-              top: '64%',
+              top: '71%',
               left: '50%',
               transform: 'translateX(-50%)',
-              width: '84%',
-              maxWidth: '320px',
+              width: '75%',
               height: '16%',
-              maxHeight: '220px',
               borderRadius: '12px',
               opacity: showScrollArea ? 1 : 0,
             }}
@@ -169,7 +169,7 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
           {/* 我知道了按钮点击区域 - 在滚动区域显示后就可点击，扩大热区 */}
           {showScrollArea && (
             <div
-              className="absolute bottom-0 left-0 right-0 h-[20%] z-[200] flex items-center justify-center"
+              className="absolute bottom-0 left-0 right-0 h-[15%] z-[200] flex items-center justify-center"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

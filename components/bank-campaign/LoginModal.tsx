@@ -226,20 +226,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
             </span>
           </div>
 
-            {/* 登录按钮点击区域 */}
-            <button 
+            {/* 登录按钮点击区域 - 透明热区 */}
+            <div 
               className={cn(
-                "absolute bottom-[4%] left-[10%] right-[10%] h-[12%] cursor-pointer z-10 flex items-center justify-center rounded-full overflow-hidden",
-                loggingIn ? "pointer-events-none" : "active:opacity-80"
+                "absolute bottom-[12%] left-[10%] right-[10%] h-[12%] cursor-pointer z-10",
+                loggingIn ? "pointer-events-none" : ""
               )}
               onClick={handleLogin}
-              disabled={loggingIn}
-            >
-              {/* 按钮灰色遮罩 - loggingIn 时立即变灰 */}
-              {loggingIn && (
-                <div className="absolute inset-0 bg-black/60 rounded-full" />
-              )}
-            </button>
+            />
+            {/* Loading 遮罩 */}
+            {loggingIn && (
+              <div className="absolute bottom-[12%] left-[10%] right-[10%] h-[12%] bg-black/50 rounded-full z-20 pointer-events-none" />
+            )}
         </div>
 
         {/* 关闭按钮 */}

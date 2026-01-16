@@ -4,7 +4,6 @@
 // 导入依赖
 // ============================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
 import styles from '@/components/bank-campaign/campaign.module.css';
 import { Card, DrawPhase } from '@/components/bank-campaign/Card';
 import { CollectionSlots } from '@/components/bank-campaign/CollectionSlots';
@@ -28,6 +27,7 @@ const CARD_FRAME_FOLDERS: Record<string, string> = {
 };
 import { CARDS, CardChar } from '@/lib/cardConfig';
 import { getUserStatus, drawCard as drawCardApi } from '@/lib/api';
+import { preloadImage } from '@/lib/imageCache';
 
 // ============================================================
 // 主组件：集五福游戏页面
@@ -67,6 +67,8 @@ export default function BankCampaignPage() {
 
   // 抽卡动画结束回调（由抽卡动画 video 触发）
   const drawAnimationDoneRef = useRef<(() => void) | null>(null);
+  // 抽卡动画快完成时的回调（提前显示弹窗）
+  const drawAnimationNearCompleteRef = useRef<(() => void) | null>(null);
   const [showDrawAnimationVideo, setShowDrawAnimationVideo] = useState(false);
   const [drawAnimationVideoKey, setDrawAnimationVideoKey] = useState(0);
 
@@ -81,12 +83,18 @@ export default function BankCampaignPage() {
   // 最终弹窗显示状态（动画播完后显示）
   const [showFinalModal, setShowFinalModal] = useState(false);
 
+  // 卡片区域显示状态（关闭最终弹窗后延迟显示）
+  const [cardAreaVisible, setCardAreaVisible] = useState(true);
+
   // Toast 提示状态
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // 测试模式状态（默认开启，方便UI测试）
-  const [testMode, setTestMode] = useState(true);
+  // 测试模式状态（默认：真实模式）
+  const [testMode, setTestMode] = useState(false);
+
+  // 线上默认隐藏调试面板
+  const SHOW_DEBUG_PANEL = false;
 
   // ========================================
   // 初始化：从 localStorage 恢复状态
@@ -120,51 +128,83 @@ export default function BankCampaignPage() {
       setUserPhone(savedPhone);
     }
 
-    // 恢复测试模式状态
-    const savedTestMode = localStorage.getItem('abc_test_mode');
-    if (savedTestMode === 'true') {
-      setTestMode(true);
-    }
+    // 固定默认真实模式：不从 localStorage 恢复测试模式（并清理旧值）
+    localStorage.setItem('abc_test_mode', 'false');
 
-    // 预加载抽卡序列帧（马上发财蛙）
-    const preloadCardSpinFrames = () => {
-      console.log('[预加载] 开始预加载抽卡序列帧...');
+    // 主页面关键图片（卡片、按钮等）
+    const mainPageImages = [
+      '/images/campaign/design/wabao-card.png',
+      '/images/campaign/design/draw-btn.png',
+      '/images/campaign/design/rules-btn.png',
+      '/images/campaign/design/title.png',
+      '/images/campaign/design/subtitle.png',
+      '/images/campaign/design/merge-btn.png',
+    ];
+
+    // 预加载主页面图片
+    const preloadMainImages = async () => {
+      console.log('[预加载] 开始预加载主页面图片...');
+      const promises = mainPageImages.map(src => preloadImage(src));
+      await Promise.all(promises);
+      console.log('[预加载] 主页面图片预加载完成');
+    };
+
+    // 预加载抽卡序列帧（马上发财哇）- 使用全局缓存
+    const preloadCardSpinFrames = async () => {
+      console.log('[预加载] 开始预加载抽卡序列帧到全局缓存...');
+      const promises: Promise<HTMLImageElement>[] = [];
+      
       // 共用前46帧
       for (let i = 0; i < 46; i++) {
-        const img = new Image();
-        img.src = `/images/frames/card-spin/common/集福卡_${String(i).padStart(5, '0')}.png`;
+        const src = `/images/frames/card-spin/common/集福卡_${String(i).padStart(5, '0')}.png`;
+        promises.push(preloadImage(src));
       }
       // 各卡片后29帧
       const cardFolders = ['ma', 'shang', 'fa', 'cai', 'wa'];
       cardFolders.forEach(folder => {
         for (let i = 46; i < 75; i++) {
-          const img = new Image();
-          img.src = `/images/frames/card-spin/${folder}/集福卡_${String(i).padStart(5, '0')}.png`;
+          const src = `/images/frames/card-spin/${folder}/集福卡_${String(i).padStart(5, '0')}.png`;
+          promises.push(preloadImage(src));
         }
       });
+      
+      await Promise.all(promises);
       console.log('[预加载] 抽卡序列帧预加载完成（46共用 + 5x29卡片 = 191帧）');
     };
 
-    // 延迟预加载骑马序列帧（127帧）
-    const preloadHorseFrames = () => {
-      console.log('[预加载] 开始预加载骑马序列帧...');
+    // 预加载骑马序列帧（127帧）- 使用全局缓存
+    const preloadHorseFrames = async () => {
+      console.log('[预加载] 开始预加载骑马序列帧到全局缓存...');
+      const promises: Promise<HTMLImageElement>[] = [];
+      
       for (let i = 0; i < 127; i++) {
-        const img = new Image();
-        img.src = `/images/frames/horse-ride/骑马青蛙_${String(i).padStart(5, '0')}.png`;
+        const src = `/images/frames/horse-ride/骑马青蛙_${String(i).padStart(5, '0')}.png`;
+        promises.push(preloadImage(src));
       }
+      
+      await Promise.all(promises);
       console.log('[预加载] 骑马序列帧预加载完成（127帧）');
     };
 
-    // 页面加载后立即预加载抽卡序列帧
-    setTimeout(preloadCardSpinFrames, 500);
+    // 按顺序加载：主页面图片 → 抽卡序列帧 → 骑马序列帧
+    const loadInOrder = async () => {
+      // 1. 先加载主页面图片
+      await preloadMainImages();
+      
+      // 2. 主页面图片完成后，加载抽卡序列帧
+      await preloadCardSpinFrames();
+      
+      // 3. 抽卡序列帧完成后，空闲时加载骑马序列帧
+      if ('requestIdleCallback' in window) {
+        (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
+          .requestIdleCallback(() => preloadHorseFrames(), { timeout: 5000 });
+      } else {
+        setTimeout(preloadHorseFrames, 1000);
+      }
+    };
 
-    // 等其他资源加载完成后再预加载骑马序列帧
-    if ('requestIdleCallback' in window) {
-      (window as Window & { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
-        .requestIdleCallback(preloadHorseFrames, { timeout: 5000 });
-    } else {
-      setTimeout(preloadHorseFrames, 3000);
-    }
+    // 页面加载后开始按顺序预加载
+    loadInOrder();
   }, []);
 
   // ========================================
@@ -177,6 +217,20 @@ export default function BankCampaignPage() {
   useEffect(() => {
     localStorage.setItem('abc_card_counts', JSON.stringify(cardCounts));
   }, [cardCounts]);
+
+  // 监听最终弹窗关闭，延迟显示卡片区域
+  useEffect(() => {
+    if (showFinal) {
+      // 打开最终弹窗时立即隐藏卡片区域
+      setCardAreaVisible(false);
+    } else {
+      // 关闭最终弹窗后延迟0.5秒显示卡片区域
+      const timer = setTimeout(() => {
+        setCardAreaVisible(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [showFinal]);
 
   // ========================================
   // 业务逻辑函数
@@ -415,10 +469,19 @@ export default function BankCampaignPage() {
     // 提前设置结果，让动画组件知道播放哪个卡片的序列帧（如果有两段式）
     setCurrentResult(char);
 
+    // 设置动画快完成时的回调（提前显示弹窗，由 FrameAnimation 的 onNearComplete 触发）
+    drawAnimationNearCompleteRef.current = () => {
+      setShowResult(true);
+      setDrawPhase('done');
+    };
+
     // 4. 等待动画完成（视频结束）
     await waitForDrawAnimationEnd();
 
-    // 5. 显示结果
+    // 清除回调
+    drawAnimationNearCompleteRef.current = null;
+
+    // 5. 显示结果（如果还没显示的话）
     setDrawPhase('revealing');
 
     // 6. 更新收集状态
@@ -437,11 +500,11 @@ export default function BankCampaignPage() {
       setCardCounts(newCounts);
     }
 
-    // 7. 显示结果弹窗
-    setTimeout(() => {
+    // 确保弹窗显示（兜底）
+    if (!showResult) {
       setShowResult(true);
       setDrawPhase('done');
-    }, 500);
+    }
   };
 
   /**
@@ -504,7 +567,14 @@ export default function BankCampaignPage() {
     setShowDrawAnimationVideo(true);
     setDrawAnimationVideoKey((k) => k + 1);
 
+    // 设置动画快完成时的回调
+    drawAnimationNearCompleteRef.current = () => {
+      setShowResult(true);
+      setDrawPhase('done');
+    };
+
     await waitForDrawAnimationEnd();
+    drawAnimationNearCompleteRef.current = null;
 
     // 隐藏动画
     setShowDrawAnimationVideo(false);
@@ -518,11 +588,9 @@ export default function BankCampaignPage() {
     newCounts[cardIndex]++;
     setCardCounts(newCounts);
 
-    // 显示结果弹窗
-    setTimeout(() => {
-      setShowResult(true);
-      setDrawPhase('done');
-    }, 300);
+    // 确保弹窗显示
+    setShowResult(true);
+    setDrawPhase('done');
   };
 
   /**
@@ -690,29 +758,22 @@ export default function BankCampaignPage() {
           gamePageReady ? "opacity-100 scale-100" : "opacity-0 scale-95"
         )}>
 
-          {/* ==================== 调试面板 ==================== */}
-          <DebugPanel
-            testMode={testMode}
-            onTestModeChange={handleTestModeChange}
-            userPhone={userPhone}
-            collected={collected}
-            cardCounts={cardCounts}
-            onQuickLogin={quickLogin}
-            onSetCards={setCards}
-            onResetSmall={resetCards}
-            onResetLarge={resetAll}
-            onBossKey={bossKey}
-            onDrawSpecificCard={drawSpecificCard}
-          />
-
-          {/* ==================== 音乐按钮 ==================== */}
-          <button
-            onClick={toggleMusic}
-            className="absolute top-4 right-4 z-[200] bg-black/10 backdrop-blur-md text-white/80 w-10 h-10 rounded-full hover:bg-black/20 transition-all flex items-center justify-center"
-            aria-label={isMusicPlaying ? '关闭音乐' : '开启音乐'}
-          >
-            {isMusicPlaying ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </button>
+          {/* ==================== 调试面板（默认隐藏） ==================== */}
+          {SHOW_DEBUG_PANEL && (
+            <DebugPanel
+              testMode={testMode}
+              onTestModeChange={handleTestModeChange}
+              userPhone={userPhone}
+              collected={collected}
+              cardCounts={cardCounts}
+              onQuickLogin={quickLogin}
+              onSetCards={setCards}
+              onResetSmall={resetCards}
+              onResetLarge={resetAll}
+              onBossKey={bossKey}
+              onDrawSpecificCard={drawSpecificCard}
+            />
+          )}
 
           {/* ==================== 顶部Logo区域 ==================== */}
           <div className="flex justify-end items-center px-2 pt-2 z-10">
@@ -723,6 +784,19 @@ export default function BankCampaignPage() {
               className="h-7 object-contain"
             />
           </div>
+
+          {/* ==================== 音乐按钮 - 悬浮在右上角 ==================== */}
+          <button
+            onClick={toggleMusic}
+            className="fixed top-9 right-2 z-[200] w-7 h-7 flex items-center justify-center transition-opacity active:opacity-70"
+            aria-label={isMusicPlaying ? '关闭音乐' : '开启音乐'}
+          >
+            <img
+              src={isMusicPlaying ? "/images/campaign/design/播放按钮.png" : "/images/campaign/design/暂停按钮.png"}
+              alt={isMusicPlaying ? "暂停" : "播放"}
+              className="w-full h-full object-contain"
+            />
+          </button>
 
           {/* ==================== 标题区域 ==================== */}
           <div className="mt-2 z-10 text-center px-2">
@@ -741,10 +815,10 @@ export default function BankCampaignPage() {
           </div>
 
           {/* ==================== 主抽卡区域 ==================== */}
-          {/* 播放最终动画时渐变隐藏，1秒过渡 */}
+          {/* 播放最终动画时渐变隐藏，关闭后延迟0.5秒渐现 */}
           <div 
-            className="flex-1 w-full relative z-10 transition-opacity duration-1000"
-            style={{ opacity: showFinal ? 0 : 1 }}
+            className="flex-1 w-full relative z-10 transition-opacity duration-500"
+            style={{ opacity: cardAreaVisible && !showFinal ? 1 : 0 }}
           >
             {/* 
               卡片位置计算（基于 1080×1920 设计稿）:
@@ -911,6 +985,8 @@ export default function BankCampaignPage() {
               secondStartIndex={46}
               secondFrames={29}
               onComplete={() => drawAnimationDoneRef.current?.()}
+              onNearComplete={() => drawAnimationNearCompleteRef.current?.()}
+              nearCompleteFrames={12}
               className="w-full h-full"
               style={{ objectFit: 'cover' }}
             />
