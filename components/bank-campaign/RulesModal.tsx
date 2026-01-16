@@ -3,6 +3,7 @@ import Image from 'next/image';
 import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { ClientPortal } from './ClientPortal';
+import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface RulesModalProps {
   isOpen: boolean;
@@ -10,6 +11,9 @@ interface RulesModalProps {
 }
 
 export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose }) => {
+  // 锁定 body 滚动
+  useBodyScrollLock(isOpen);
+
   if (!isOpen) return null;
 
   return (

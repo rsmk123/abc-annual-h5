@@ -13,6 +13,7 @@ interface CardProps {
   onDraw: () => void;
   disabled?: boolean;
   hasDrawnToday?: boolean;
+  onAlreadyDrawnClick?: () => void; // 已抽卡时点击的回调
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -20,10 +21,21 @@ export const Card: React.FC<CardProps> = ({
   resultChar,
   onDraw,
   disabled,
-  hasDrawnToday
+  hasDrawnToday,
+  onAlreadyDrawnClick
 }) => {
   const isSpinning = drawPhase === 'spinning';
   const showResult = drawPhase === 'revealing' || drawPhase === 'done';
+
+  const handleClick = () => {
+    if (hasDrawnToday) {
+      // 已抽卡，弹出提示
+      onAlreadyDrawnClick?.();
+    } else if (!disabled && drawPhase === 'idle') {
+      // 可以抽卡
+      onDraw();
+    }
+  };
 
   return (
     <div className={cn(styles.perspectiveContainer, "w-full h-full")}>
@@ -33,13 +45,9 @@ export const Card: React.FC<CardProps> = ({
           "w-full h-full relative cursor-pointer",
           // 旋转时隐藏卡片，只显示视频动画
           isSpinning && "opacity-0",
-          (disabled || hasDrawnToday) && "cursor-not-allowed"
+          disabled && !hasDrawnToday && "cursor-not-allowed"
         )}
-        onClick={() => {
-          if (!disabled && !hasDrawnToday && drawPhase === 'idle') {
-            onDraw();
-          }
-        }}
+        onClick={handleClick}
       >
         {/* 正面 - 抽到的福卡（翻转后显示） */}
         <div className={cn(

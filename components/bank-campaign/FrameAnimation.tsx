@@ -48,6 +48,7 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [images, setImages] = useState<HTMLImageElement[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [firstFrameReady, setFirstFrameReady] = useState(false);
   const frameIndexRef = useRef(0);
   const animationRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef(0);
@@ -81,6 +82,7 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
 
     // 重置状态
     setIsLoaded(false);
+    setFirstFrameReady(false);
     isFinishedRef.current = false;
     frameIndexRef.current = 0;
 
@@ -91,6 +93,10 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
           if (isMounted) {
             loadedImages[index] = img;
             loadedCount++;
+            // 第一帧加载完成后立即通知
+            if (index === 0) {
+              setFirstFrameReady(true);
+            }
             if (loadedCount === actualTotalFrames) {
               setImages(loadedImages);
               setIsLoaded(true);
@@ -111,9 +117,12 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
       });
     };
 
-    Promise.all(
-      Array.from({ length: actualTotalFrames }, (_, i) => loadImage(i))
-    );
+    // 优先加载第一帧，然后并行加载其他帧
+    loadImage(0).then(() => {
+      Promise.all(
+        Array.from({ length: actualTotalFrames - 1 }, (_, i) => loadImage(i + 1))
+      );
+    });
 
     return () => {
       isMounted = false;
@@ -123,6 +132,21 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
       }
     };
   }, [actualTotalFrames, getFramePath]);
+
+  // 第一帧准备好后立即绘制，避免白屏
+  useEffect(() => {
+    if (!firstFrameReady || images.length === 0 || !images[0]) return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    const firstImage = images[0];
+    canvas.width = firstImage.naturalWidth;
+    canvas.height = firstImage.naturalHeight;
+    ctx.drawImage(firstImage, 0, 0);
+  }, [firstFrameReady, images]);
 
   // 播放动画 - 只依赖 isLoaded 和 images，不依赖 onComplete
   useEffect(() => {
@@ -138,6 +162,8 @@ export const FrameAnimation: React.FC<FrameAnimationProps> = ({
     if (firstImage) {
       canvas.width = firstImage.naturalWidth;
       canvas.height = firstImage.naturalHeight;
+      // 立即绘制第一帧，避免白屏闪烁
+      ctx.drawImage(firstImage, 0, 0);
     }
 
     const frameDuration = 1000 / fps;

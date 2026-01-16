@@ -4,6 +4,7 @@ import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { FrameAnimation } from './FrameAnimation';
 import { ClientPortal } from './ClientPortal';
+import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface FinalRewardModalProps {
   isOpen: boolean;
@@ -11,12 +12,21 @@ interface FinalRewardModalProps {
   onClose: () => void;
 }
 
+// 手机号脱敏
+const maskPhone = (phone: string) => {
+  if (!phone || phone.length !== 11) return phone;
+  return phone.slice(0, 3) + '****' + phone.slice(7);
+};
+
 export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, userPhone, onClose }) => {
   const [showAnimation, setShowAnimation] = useState(false);
   const [animationFinished, setAnimationFinished] = useState(false);
   const [showScrollArea, setShowScrollArea] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
-  const [fadeIn, setFadeIn] = useState(false); // 渐入效果
+  const [fadeIn, setFadeIn] = useState(false);
+
+  // 锁定 body 滚动
+  useBodyScrollLock(showAnimation);
 
   // 当弹窗打开时，播放动画
   useEffect(() => {
@@ -30,10 +40,10 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
       // 0.1秒后开始渐入
       const fadeTimer = setTimeout(() => setFadeIn(true), 10);
 
-      // 提前1秒显示滚动区域（127帧/15fps≈8.5秒，提前到7.5秒）
+      // 提前2秒显示滚动区域（127帧/15fps≈8.5秒，提前到6.5秒）
       const scrollTimer = setTimeout(() => {
         setShowScrollArea(true);
-      }, 7500);
+      }, 6500);
 
       // 兜底：9秒后标记动画结束
       const finishTimer = setTimeout(() => {
@@ -101,11 +111,27 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
             }}
           />
 
+          {/* 手机号显示 - 在滚动区域上方 */}
+          {showScrollArea && userPhone && (
+            <div 
+              className="absolute text-center transition-opacity duration-500"
+              style={{
+                top: '58%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                opacity: showScrollArea ? 1 : 0,
+              }}
+            >
+              <span className="text-yellow-400 text-sm font-medium">
+                {maskPhone(userPhone)}
+              </span>
+            </div>
+          )}
+
           {/* 活动规则滚动区域 - 提前1秒渐现 */}
           <div 
             className="absolute overflow-hidden transition-opacity duration-500"
             style={{
-              // 定位到序列帧最后一帧的滚动区域位置
               top: '64%',
               left: '50%',
               transform: 'translateX(-50%)',
@@ -131,7 +157,7 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
                 }
               `}</style>
               <Image
-                src="/images/campaign/modals/activity-rules.png"
+                src="/images/campaign/modals/rules.png"
                 alt="活动规则"
                 width={750}
                 height={2000}
@@ -140,17 +166,19 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
             </div>
           </div>
 
-          {/* 我知道了按钮点击区域 - 在最后一帧上 */}
-          {animationFinished && (
-            <button
-              className="absolute bottom-[8%] left-[10%] right-[10%] h-[8%] cursor-pointer active:opacity-70 z-20"
-              style={{ backgroundColor: 'rgba(255,0,0,0.0)' }}
+          {/* 我知道了按钮点击区域 - 在滚动区域显示后就可点击，扩大热区 */}
+          {showScrollArea && (
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[20%] z-[200] flex items-center justify-center"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                console.log('[FinalRewardModal] 我知道了按钮点击');
                 handleClose();
               }}
-            />
+            >
+              <div className="w-[80%] h-[50%] cursor-pointer active:opacity-70" />
+            </div>
           )}
         </div>
       </div>

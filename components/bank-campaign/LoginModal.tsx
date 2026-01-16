@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { sendCode, verifyCode } from '@/lib/api';
 import { ClientPortal } from './ClientPortal';
 import { RulesModal } from './RulesModal';
+import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -21,6 +22,16 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
   const [loggingIn, setLoggingIn] = useState(false);
   const [agreed, setAgreed] = useState(true);
   const [showRules, setShowRules] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+
+  // 锁定 body 滚动
+  useBodyScrollLock(isOpen);
+
+  // 显示 Toast
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 2500);
+  };
 
   // 生成设备ID
   const getDeviceId = () => {
@@ -32,73 +43,72 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
     return deviceId;
   };
 
+  // 启动倒计时
+  const startCountdown = (seconds: number) => {
+    setCountdown(seconds);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   const handleSendCode = async () => {
     if (phone.length !== 11) {
-      alert('请输入正确的11位手机号');
+      showToast('请输入正确的11位手机号');
       return;
     }
 
     if (countdown > 0) return;
 
+    // 乐观更新：立即开始倒计时
     setSending(true);
+    startCountdown(testMode ? 10 : 60);
     
-    // 测试模式：直接模拟成功，不调用API
+    // 测试模式：直接模拟成功
     if (testMode) {
-      alert('【测试模式】验证码已发送（任意6位数字即可登录）');
-      setCountdown(10); // 测试模式缩短倒计时
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
       setSending(false);
       return;
     }
     
-    // 真实模式：调用API
+    // 真实模式：调用API（后台执行，不阻塞）
     try {
       const result = await sendCode(phone, getDeviceId());
-      if (result.success) {
-        alert('验证码已发送');
-        setCountdown(60);
-        const timer = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      } else {
-        alert(result.error || '发送失败，请稍后重试');
+      if (!result.success) {
+        showToast(result.error || '发送失败');
       }
     } catch (error) {
-      alert(error instanceof Error ? error.message : '发送失败，请稍后重试');
+      showToast(error instanceof Error ? error.message : '发送失败');
     } finally {
       setSending(false);
     }
   };
 
   const handleLogin = async () => {
+    // 乐观更新：点击后立即变灰显示loading
+    setLoggingIn(true);
+
     if (!agreed) {
-      alert('请先阅读并同意活动详情');
+      showToast('请先阅读并同意活动详情');
+      setLoggingIn(false);
       return;
     }
 
     if (phone.length !== 11) {
-      alert('请输入正确的11位手机号');
+      showToast('请输入正确的11位手机号');
+      setLoggingIn(false);
       return;
     }
 
     // 测试模式：任意验证码都通过
     if (testMode) {
       if (code.length < 1) {
-        alert('【测试模式】请输入任意验证码');
+        showToast('请输入任意验证码');
+        setLoggingIn(false);
         return;
       }
       console.log('【测试模式】登录成功:', phone);
@@ -108,11 +118,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
 
     // 真实模式：验证6位验证码
     if (code.length !== 6) {
-      alert('请输入6位验证码');
+      showToast('请输入6位验证码');
+      setLoggingIn(false);
       return;
     }
-
-    setLoggingIn(true);
     console.log('[登录] 开始验证...', { phone, code: code.length + '位' });
     const startTime = Date.now();
     
@@ -123,11 +132,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
       if (result.success) {
         onLogin(phone);
       } else {
-        alert(result.error || '验证失败，请重试');
+        showToast(result.error || '验证失败，请重试');
       }
     } catch (error) {
       console.error('[登录] 验证失败:', error);
-      alert(error instanceof Error ? error.message : '验证失败，请重试');
+      showToast(error instanceof Error ? error.message : '验证失败，请重试');
     } finally {
       setLoggingIn(false);
     }
@@ -165,7 +174,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
             <div className="bg-gradient-to-r from-[#fff8e7] to-[#ffe4c4] rounded-full px-5 py-4 shadow-inner">
               <input 
                 type="tel" 
-                className="w-full bg-transparent border-none outline-none text-[15px] text-[#333] placeholder:text-[#999]"
+                className="w-full bg-transparent border-none outline-none text-[16px] text-[#333] placeholder:text-[#999]"
                 placeholder="请输入手机号" 
                 maxLength={11}
                 value={phone}
@@ -179,7 +188,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                className="flex-1 min-w-0 bg-transparent border-none outline-none text-[15px] text-[#333] placeholder:text-[#999]"
+                className="flex-1 min-w-0 bg-transparent border-none outline-none text-[16px] text-[#333] placeholder:text-[#999]"
                 placeholder="请输入验证码"
                 maxLength={6}
                 value={code}
@@ -259,6 +268,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
             <span className="text-sm">登录中...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Toast 提示 */}
+      {toastMsg && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center pointer-events-none">
+          <div className="bg-black/80 text-white px-6 py-4 rounded-lg shadow-xl max-w-[280px] text-center">
+            <span className="text-sm">{toastMsg}</span>
           </div>
         </div>
       )}

@@ -19,6 +19,7 @@ interface DebugPanelProps {
   onResetSmall: () => void;
   onResetLarge: () => void;
   onBossKey: () => void;
+  onDrawSpecificCard?: (cardIndex: number) => void; // 抽指定卡片
 }
 
 export const DebugPanel: React.FC<DebugPanelProps> = ({
@@ -32,6 +33,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({
   onResetSmall,
   onResetLarge,
   onBossKey,
+  onDrawSpecificCard,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -159,6 +161,23 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({
             </button>
           ))}
         </div>
+        {/* 抽指定卡测试 */}
+        {onDrawSpecificCard && (
+          <div className="mt-2">
+            <div className="text-white/60 text-xs mb-1.5">抽指定卡:</div>
+            <div className="grid grid-cols-5 gap-1">
+              {CARDS.map((char, idx) => (
+                <button
+                  key={char}
+                  onClick={() => onDrawSpecificCard(idx)}
+                  className="px-1 py-1 bg-orange-500/80 hover:bg-orange-500 rounded text-xs transition-all"
+                >
+                  {char}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 重置操作 */}

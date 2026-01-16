@@ -18,13 +18,13 @@ import { ClientPortal } from '@/components/bank-campaign/ClientPortal';
 import { FrameAnimation } from '@/components/bank-campaign/FrameAnimation';
 import { cn } from '@/lib/utils';
 
-// 卡片字符到序列帧文件夹的映射
+// 卡片字符到序列帧文件夹的映射（注意：哇 不是 蛙）
 const CARD_FRAME_FOLDERS: Record<string, string> = {
   '马': 'ma',
   '上': 'shang',
   '发': 'fa',
   '财': 'cai',
-  '蛙': 'wa',
+  '哇': 'wa',
 };
 import { CARDS, CardChar } from '@/lib/cardConfig';
 import { getUserStatus, drawCard as drawCardApi } from '@/lib/api';
@@ -456,12 +456,73 @@ export default function BankCampaignPage() {
       setDrawPhase('idle');
     }, 300);
 
-    // 检查是否集齐
-    if (collected.every(Boolean)) {
-      setTimeout(() => {
-        setShowFinal(true);
-      }, 800);
+    // 注意：集齐后不再自动触发最终动画，改为手动点击合成按钮
+  };
+
+  /**
+   * 测试用：抽取指定卡片
+   */
+  const drawSpecificCard = async (cardIndex: number) => {
+    // 只在测试模式下有效
+    if (!testMode) {
+      showToastMessage('请先切换到测试模式');
+      return;
     }
+
+    // 防止重复点击
+    if (drawPhase !== 'idle') return;
+
+    // 播放音效
+    playClickSound();
+
+    // 设置抽卡结果为指定卡片
+    const targetChar = CARDS[cardIndex];
+    setCurrentResult(targetChar);
+
+    // 1. 开始旋转动画
+    setDrawPhase('spinning');
+
+    // 等待抽卡序列帧动画播放结束
+    const waitForDrawAnimationEnd = () =>
+      new Promise<void>((resolve) => {
+        let finished = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          drawAnimationDoneRef.current = null;
+          resolve();
+        };
+
+        drawAnimationDoneRef.current = finish;
+        timeoutId = setTimeout(finish, 4000);
+      });
+
+    // 触发抽卡动画
+    setShowDrawAnimationVideo(true);
+    setDrawAnimationVideoKey((k) => k + 1);
+
+    await waitForDrawAnimationEnd();
+
+    // 隐藏动画
+    setShowDrawAnimationVideo(false);
+
+    // 更新收集状态
+    const newCollected = [...collected];
+    newCollected[cardIndex] = true;
+    setCollected(newCollected);
+
+    const newCounts = [...cardCounts];
+    newCounts[cardIndex]++;
+    setCardCounts(newCounts);
+
+    // 显示结果弹窗
+    setTimeout(() => {
+      setShowResult(true);
+      setDrawPhase('done');
+    }, 300);
   };
 
   /**
@@ -616,6 +677,10 @@ export default function BankCampaignPage() {
             width: 'min(100%, calc(100vh * 9 / 16))',
             height: 'min(100%, calc(100vw * 16 / 9))',
             maxHeight: '100%',
+            // Safari 防滚动
+            touchAction: 'none',
+            overscrollBehavior: 'none',
+            WebkitOverflowScrolling: 'auto',
           }}
         >
 
@@ -637,6 +702,7 @@ export default function BankCampaignPage() {
             onResetSmall={resetCards}
             onResetLarge={resetAll}
             onBossKey={bossKey}
+            onDrawSpecificCard={drawSpecificCard}
           />
 
           {/* ==================== 音乐按钮 ==================== */}
@@ -703,6 +769,7 @@ export default function BankCampaignPage() {
                 onDraw={drawCard}
                 disabled={false}
                 hasDrawnToday={hasDrawnToday}
+                onAlreadyDrawnClick={() => showToastMessage('每天可抽卡一次，请明天再来哦')}
               />
 
 
@@ -713,6 +780,9 @@ export default function BankCampaignPage() {
                   disabled={collected.every(Boolean)}
                   hasDrawnToday={hasDrawnToday}
                   isDrawing={drawPhase === 'spinning'}
+                  allCollected={collected.every(Boolean)}
+                  onAlreadyDrawnClick={() => showToastMessage('每天可抽卡一次，请明天再来哦')}
+                  onMergeClick={() => setShowFinal(true)}
                 />
               </div>
             </div>

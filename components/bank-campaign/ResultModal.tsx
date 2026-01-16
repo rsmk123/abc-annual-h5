@@ -4,6 +4,7 @@ import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { CardChar, getResultModalImage } from '@/lib/cardConfig';
 import { ClientPortal } from './ClientPortal';
+import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface ResultModalProps {
   isOpen: boolean;
@@ -12,6 +13,9 @@ interface ResultModalProps {
 }
 
 export const ResultModal: React.FC<ResultModalProps> = ({ isOpen, char, onClose }) => {
+  // 锁定 body 滚动
+  useBodyScrollLock(isOpen && !!char);
+  
   const resultModalImage = char ? getResultModalImage(char) : '';
 
   return (

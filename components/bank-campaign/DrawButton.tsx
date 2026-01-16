@@ -9,26 +9,63 @@ interface DrawButtonProps {
   disabled: boolean;
   hasDrawnToday: boolean;
   isDrawing: boolean;
+  allCollected?: boolean; // 是否集齐所有卡片
+  onAlreadyDrawnClick?: () => void; // 已抽卡时点击的回调
+  onMergeClick?: () => void; // 合成按钮点击回调
 }
 
 export const DrawButton: React.FC<DrawButtonProps> = ({
   onClick,
   disabled,
   hasDrawnToday,
-  isDrawing
+  isDrawing,
+  allCollected,
+  onAlreadyDrawnClick,
+  onMergeClick
 }) => {
-  const isDisabled = disabled || hasDrawnToday || isDrawing;
-
   // 旋转时隐藏按钮
   if (isDrawing) {
     return null;
   }
 
+  // 集齐所有卡片时显示合成按钮
+  if (allCollected) {
+    return (
+      <div className="w-full flex flex-col items-center">
+        <button
+          onClick={onMergeClick}
+          className={cn(
+            "transition-all duration-200",
+            "active:scale-[0.98]",
+            "hover:brightness-105"
+          )}
+        >
+          <img
+            src="/images/campaign/design/merge-btn.png"
+            alt="点击合成大奖"
+            className="h-[50px]"
+          />
+        </button>
+      </div>
+    );
+  }
+
+  // 已抽卡时，按钮可点击但触发不同回调
+  const handleClick = () => {
+    if (hasDrawnToday) {
+      onAlreadyDrawnClick?.();
+    } else if (!disabled) {
+      onClick();
+    }
+  };
+
+  const isDisabled = disabled && !hasDrawnToday;
+
   return (
     <div className="w-full flex flex-col items-center">
       {/* 主抽卡按钮 - 使用设计稿图片 */}
       <button
-        onClick={onClick}
+        onClick={handleClick}
         disabled={isDisabled}
         className={cn(
           "transition-all duration-200",
@@ -37,11 +74,11 @@ export const DrawButton: React.FC<DrawButtonProps> = ({
         )}
       >
         {hasDrawnToday ? (
-          // 已抽卡状态 - 使用切图
+          // 已抽卡状态 - 使用切图（可点击弹出提示，加灰色效果）
           <img
             src={IMAGES.modals.thanksComeTomorrow}
             alt="感谢参与，明天再来"
-            className="h-[50px]"
+            className="h-[50px] grayscale opacity-70"
           />
         ) : (
           // 正常状态：使用设计稿按钮图片
