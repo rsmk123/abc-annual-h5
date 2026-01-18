@@ -1,22 +1,22 @@
 {
   "/Users/xiaoyang/Desktop/Next.js项目/abc-bank-annual-h5/functions/api/serverless.yml": {
-    "versionFramework": "4.28.0",
+    "versionFramework": "4.31.0",
     "servicePath": "/Users/xiaoyang/Desktop/Next.js项目/abc-bank-annual-h5/functions/api/serverless.yml",
     "serviceConfigFileName": "serverless.yml",
     "service": {
-      "service": "abc-bank-h5-api",
-      "provider": {
-        "name": "tencent",
-        "runtime": "Nodejs18.13",
+      "component": "scf",
+      "name": "abc-bank-h5-api",
+      "app": "abc-bank-h5",
+      "inputs": {
+        "name": "abc-bank-h5-api",
+        "src": "./",
+        "handler": "index.main_handler",
+        "runtime": "Nodejs18.15",
         "region": "ap-guangzhou",
-        "credentials": "<REDACTED>"
-      },
-      "functions": {
-        "api": {
-          "handler": "index.main_handler",
-          "memorySize": 512,
-          "timeout": 10,
-          "environment": {
+        "memorySize": 512,
+        "timeout": 30,
+        "environment": {
+          "variables": {
             "POSTGRES_HOST": "${env:POSTGRES_HOST}",
             "POSTGRES_PORT": "${env:POSTGRES_PORT}",
             "POSTGRES_USER": "${env:POSTGRES_USER}",
@@ -26,45 +26,21 @@
             "REDIS_PORT": "${env:REDIS_PORT}",
             "REDIS_PASSWORD": "<REDACTED>",
             "JWT_SECRET": "<REDACTED>",
-            "ENCRYPT_KEY": "${env:ENCRYPT_KEY}"
-          },
-          "events": [
-            {
-              "apigw": {
-                "name": "abc-h5-api",
-                "parameters": {
-                  "protocols": [
-                    "https"
-                  ],
-                  "environment": "release",
-                  "endpoints": [
-                    {
-                      "path": "/",
-                      "method": "ANY"
-                    },
-                    {
-                      "path": "/{proxy+}",
-                      "method": "ANY"
-                    }
-                  ]
-                }
-              }
-            }
-          ]
+            "ENCRYPT_KEY": "${env:ENCRYPT_KEY}",
+            "TENCENT_SECRET_ID": "<REDACTED>",
+            "TENCENT_SECRET_KEY": "<REDACTED>",
+            "TENCENT_SMS_APP_ID": "${env:TENCENT_SMS_APP_ID}",
+            "TENCENT_SMS_SIGN_NAME": "${env:TENCENT_SMS_SIGN_NAME}",
+            "TENCENT_SMS_TEMPLATE_ID": "${env:TENCENT_SMS_TEMPLATE_ID}"
+          }
         }
       }
     },
-    "provider": {
-      "name": "tencent",
-      "runtime": "Nodejs18.13",
-      "region": "ap-guangzhou",
-      "credentials": "<REDACTED>"
-    },
     "error": {
       "message": "You must sign in or use a license key with Serverless Framework V.4 and later versions. Please use \"serverless login\".",
-      "stack": "Error: You must sign in or use a license key with Serverless Framework V.4 and later versions. Please use \"serverless login\".\n    at Authentication.getAuthenticatedData (file:///Users/xiaoyang/.serverless/releases/4.28.0/package/dist/sf-core.js:713:11187)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Authentication.authenticate (file:///Users/xiaoyang/.serverless/releases/4.28.0/package/dist/sf-core.js:716:4121)\n    at async TraditionalRunner.resolveVariablesAndAuthenticate (file:///Users/xiaoyang/.serverless/releases/4.28.0/package/dist/sf-core.js:725:1394)\n    at async TraditionalRunner.run (file:///Users/xiaoyang/.serverless/releases/4.28.0/package/dist/sf-core.js:1396:28091)\n    at async route (file:///Users/xiaoyang/.serverless/releases/4.28.0/package/dist/sf-core.js:1571:2848)\n    at async Object.run (file:///Users/xiaoyang/.serverless/releases/4.28.0/package/dist/sf-core.js:1572:3876)\n    at async run2 (file:///Users/xiaoyang/.serverless/releases/4.28.0/package/dist/sf-core.js:1572:5030)"
+      "stack": "Error: You must sign in or use a license key with Serverless Framework V.4 and later versions. Please use \"serverless login\".\n    at Authentication.getAuthenticatedData (file:///Users/xiaoyang/.serverless/releases/4.31.0/package/dist/sf-core.js:836:11564)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at async Authentication.authenticate (file:///Users/xiaoyang/.serverless/releases/4.31.0/package/dist/sf-core.js:839:4130)\n    at async TraditionalRunner.resolveVariablesAndAuthenticate (file:///Users/xiaoyang/.serverless/releases/4.31.0/package/dist/sf-core.js:847:2394)\n    at async TraditionalRunner.run (file:///Users/xiaoyang/.serverless/releases/4.31.0/package/dist/sf-core.js:1831:27806)\n    at async route (file:///Users/xiaoyang/.serverless/releases/4.31.0/package/dist/sf-core.js:2006:2848)\n    at async Object.run (file:///Users/xiaoyang/.serverless/releases/4.31.0/package/dist/sf-core.js:2007:3879)\n    at async run2 (file:///Users/xiaoyang/.serverless/releases/4.31.0/package/dist/sf-core.js:2007:5033)"
     },
-    "serviceRawFile": "service: abc-bank-h5-api\n\nprovider:\n  name: tencent\n  runtime: Nodejs18.13\n  region: ap-guangzhou\n  credentials: ~/.tencentcloud/credentials\n\nfunctions:\n  api:\n    handler: index.main_handler\n    memorySize: 512\n    timeout: 10\n    environment:\n      # 数据库配置\n      POSTGRES_HOST: ${env:POSTGRES_HOST}\n      POSTGRES_PORT: ${env:POSTGRES_PORT}\n      POSTGRES_USER: ${env:POSTGRES_USER}\n      POSTGRES_PASSWORD: ${env:POSTGRES_PASSWORD}\n      POSTGRES_DB: ${env:POSTGRES_DB}\n\n      # Redis配置\n      REDIS_HOST: ${env:REDIS_HOST}\n      REDIS_PORT: ${env:REDIS_PORT}\n      REDIS_PASSWORD: ${env:REDIS_PASSWORD}\n\n      # JWT密钥\n      JWT_SECRET: ${env:JWT_SECRET}\n\n      # 加密密钥（32字节）\n      ENCRYPT_KEY: ${env:ENCRYPT_KEY}\n\n      # 腾讯云短信服务（待审核通过后取消注释并配置）\n      # TENCENT_SECRET_ID: ${env:TENCENT_SECRET_ID}\n      # TENCENT_SECRET_KEY: ${env:TENCENT_SECRET_KEY}\n      # TENCENT_SMS_APP_ID: ${env:TENCENT_SMS_APP_ID}\n      # TENCENT_SMS_SIGN_NAME: ${env:TENCENT_SMS_SIGN_NAME}\n      # TENCENT_SMS_TEMPLATE_ID: ${env:TENCENT_SMS_TEMPLATE_ID}\n\n    events:\n      - apigw:\n          name: abc-h5-api\n          parameters:\n            protocols:\n              - https\n            environment: release\n            endpoints:\n              - path: /\n                method: ANY\n              - path: /{proxy+}\n                method: ANY\n\n# plugins:\n#   - serverless-tencent-scf\n",
+    "serviceRawFile": "component: scf\nname: abc-bank-h5-api\napp: abc-bank-h5\n\ninputs:\n  name: abc-bank-h5-api\n  src: ./\n  handler: index.main_handler\n  runtime: Nodejs18.15\n  region: ap-guangzhou\n  memorySize: 512\n  timeout: 30\n\n  # 环境变量 - 请在腾讯云控制台配置实际值\n  environment:\n    variables:\n      # 数据库配置（外网访问地址）\n      POSTGRES_HOST: ${env:POSTGRES_HOST}\n      POSTGRES_PORT: ${env:POSTGRES_PORT}\n      POSTGRES_USER: ${env:POSTGRES_USER}\n      POSTGRES_PASSWORD: ${env:POSTGRES_PASSWORD}\n      POSTGRES_DB: ${env:POSTGRES_DB}\n\n      # Redis配置（外网访问地址）\n      REDIS_HOST: ${env:REDIS_HOST}\n      REDIS_PORT: ${env:REDIS_PORT}\n      REDIS_PASSWORD: ${env:REDIS_PASSWORD}\n\n      # JWT密钥\n      JWT_SECRET: ${env:JWT_SECRET}\n\n      # 加密密钥（32字节）\n      ENCRYPT_KEY: ${env:ENCRYPT_KEY}\n\n      # 腾讯云短信服务\n      TENCENT_SECRET_ID: ${env:TENCENT_SECRET_ID}\n      TENCENT_SECRET_KEY: ${env:TENCENT_SECRET_KEY}\n      TENCENT_SMS_APP_ID: ${env:TENCENT_SMS_APP_ID}\n      TENCENT_SMS_SIGN_NAME: ${env:TENCENT_SMS_SIGN_NAME}\n      TENCENT_SMS_TEMPLATE_ID: ${env:TENCENT_SMS_TEMPLATE_ID}\n",
     "command": [
       "deploy"
     ],

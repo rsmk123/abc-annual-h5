@@ -57,13 +57,10 @@ ENCRYPT_KEY=12345678901234567890123456789012
 
 ### 腾讯云 API 密钥
 
-- **APPID**: `your_appid_here`
 - **SecretId**: `your_secret_id_here`
-- **SecretKey**: ⚠️ **需要你提供**
-  - 腾讯云自 2023年11月30日起关闭查询 SecretKey 功能
-  - 仅在创建密钥时可以查看
-  - 如果你之前保存了，请提供
-  - 如果没有保存，需要点击"新建密钥"创建新的密钥对
+- **SecretKey**: `your_secret_key_here`
+  - ⚠️ 不要把密钥写进仓库；请通过环境变量或 GitHub Secrets 注入
+  - 用于 COS 上传、CDN 刷新和云函数部署
 
 ---
 
@@ -105,7 +102,7 @@ NEXT_PUBLIC_API_BASE_URL=https://service-xxx-123456.gz.apigw.tencentcs.com/relea
 
 **需要的值**:
 ```env
-# functions/api/.env (新增)
+# .env.local (根目录) 或 functions/api/.env
 TENCENT_SECRET_ID=AKIDxxxxxxxxxxxxxxxx
 TENCENT_SECRET_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
 ```
@@ -229,8 +226,8 @@ curl http://abc-h5-20251205-1331245644.cos-website.ap-guangzhou.myqcloud.com
 | `ENCRYPT_KEY` | `functions/api/.env` | 加密密钥 | ✅ 已配置 |
 | `MOCK_SMS` | `functions/api/.env` | 模拟短信开关 | ❌ 需要删除 |
 | `MOCK_SMS_CODE` | `functions/api/.env` | 模拟验证码 | ❌ 需要删除 |
-| `TENCENT_SECRET_ID` | `functions/api/.env` | API密钥ID | ❓ 待添加 |
-| `TENCENT_SECRET_KEY` | `functions/api/.env` | API密钥Key | ❓ 待添加 |
+| `TENCENT_SECRET_ID` | `.env.local` 或 `functions/api/.env` | API密钥ID | ❓ 待添加 |
+| `TENCENT_SECRET_KEY` | `.env.local` 或 `functions/api/.env` | API密钥Key | ❓ 待添加 |
 | `TENCENT_SMS_SDK_APP_ID` | `functions/api/.env` | 短信应用ID | ❓ 待添加 |
 | `TENCENT_SMS_SIGN_NAME` | `functions/api/.env` | 短信签名 | ❓ 待添加 |
 | `TENCENT_SMS_TEMPLATE_ID` | `functions/api/.env` | 短信模板ID | ❓ 待添加 |

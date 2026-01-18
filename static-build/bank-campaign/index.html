@@ -1,0 +1,2589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>哇宝年货节 天天集福卡</title>
+  <style>
+    /* ============================================================
+       重置样式
+       ============================================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: #1a0808;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    button {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    input {
+      border: none;
+      outline: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    /* ============================================================
+       主容器 - 全屏居中
+       ============================================================ */
+    #app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      overflow: hidden;
+      background-color: #1a0808;
+    }
+
+    /* ============================================================
+       9:16 游戏容器 - 核心！所有元素的定位参照
+       ============================================================ */
+    #game-container {
+      position: relative;
+      overflow: hidden;
+      background-color: #1a0808;
+    }
+
+    /* ============================================================
+       游戏背景
+       ============================================================ */
+    #game-background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      background-image: url('/images/campaign/design/bg.png');
+      background-size: 100% auto;
+      background-position: top center;
+      background-repeat: no-repeat;
+    }
+
+    #game-background img {
+      display: none;
+    }
+
+    /* ============================================================
+       游戏内容区 - 不用 flex，纯绝对定位容器
+       ============================================================ */
+    #game-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    /* ============================================================
+       顶部银联 Logo - 绝对定位
+       ============================================================ */
+    #header {
+      position: absolute;
+      top: 0.5%;
+      right: 2.5%;
+      z-index: 10;
+    }
+
+    #header img {
+      height: 28px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    /* ============================================================
+       音乐按钮 - 相对于容器定位
+       ============================================================ */
+    #music-btn {
+      position: absolute;
+      top: 4%;
+      right: 2.5%;
+      width: 28px;
+      height: 28px;
+      z-index: 200;
+    }
+
+    #music-btn img {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ============================================================
+       标题区域 - 绝对定位
+       ============================================================ */
+    #title-area {
+      position: absolute;
+      top: 5%;
+      left: 0;
+      right: 0;
+      padding: 0 8px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    #title-area img {
+      width: 100%;
+    }
+
+    #subtitle {
+      width: 60%;
+      max-width: 240px;
+      margin: -32px auto 0;
+    }
+
+    /* ============================================================
+       卡片区域 - 垂直居中偏上，绝对定位
+       ============================================================ */
+    #card-area {
+      position: absolute;
+      left: 49.5%;
+      top: 48%;
+      width: 65%;
+      -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      -webkit-transition: opacity 0.3s ease;
+      transition: opacity 0.3s ease;
+    }
+
+    /* padding-top 技巧实现宽高比 688:912 ≈ 132.56% */
+    #card-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 132.56%;
+    }
+
+    #card-content {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* ============================================================
+       按钮区域 - 在卡片内部底部
+       ============================================================ */
+    #btn-area {
+      position: absolute;
+      bottom: 5%;
+      left: 5%;
+      right: 5%;
+      z-index: 20;
+      text-align: center;
+    }
+
+    #draw-btn, #merge-btn {
+      width: 100%;
+    }
+
+    #draw-btn img {
+      width: 100%;
+      height: 60px;
+      object-fit: contain;
+    }
+
+    #merge-btn img {
+      width: 100%;
+      height: 50px;
+      object-fit: contain;
+    }
+
+    #merge-btn {
+      display: none;
+    }
+
+    /* ============================================================
+       收集槽 - 绝对定位到底部区域
+       ============================================================ */
+    #slots {
+      position: absolute;
+      bottom: 12%;
+      left: 0;
+      right: 0;
+      padding: 0 12px;
+      z-index: 10;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+
+    .slot {
+      position: relative;
+      width: 18%;
+      margin-right: 2%;
+    }
+
+    .slot:last-child {
+      margin-right: 0;
+    }
+
+    .slot-bg {
+      width: 100%;
+      display: block;
+    }
+
+    .slot-content {
+      position: absolute;
+      top: -18%;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+    }
+
+    .slot-img {
+      width: 75%;
+      height: auto;
+      object-fit: contain;
+      opacity: 0.5;
+    }
+
+    .slot.collected .slot-img {
+      opacity: 1;
+    }
+
+    /* ============================================================
+       提示区域 - 在集卡槽下方，规则按钮上方
+       ============================================================ */
+    #hint-area {
+      position: absolute;
+      bottom: 7%;
+      left: 0;
+      right: 0;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    #hint-area img {
+      height: 20px;
+    }
+
+    /* ============================================================
+       规则按钮 - 绝对定位到最底部
+       ============================================================ */
+    #rules-btn {
+      position: absolute;
+      bottom: 1%;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    #rules-btn img {
+      height: 32px;
+    }
+
+    /* ============================================================
+       欢迎页
+       ============================================================ */
+    #welcome-page {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1000;
+      background: linear-gradient(to bottom, #b81c22, #ff8c42, #fff5e6);
+      cursor: pointer;
+    }
+
+    #welcome-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    #start-btn {
+      position: absolute;
+      bottom: 8%;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+      transform: translateX(-50%);
+      width: 38%;
+      max-width: 160px;
+      pointer-events: none;
+    }
+
+    /* ============================================================
+       弹窗通用样式
+       ============================================================ */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      display: none;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      z-index: 300;
+    }
+
+    .modal-content {
+      position: relative;
+      width: 85%;
+      max-width: 320px;
+    }
+
+    .close-btn {
+      position: absolute;
+      bottom: -64px;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      -ms-transform: translateX(-50%);
+      transform: translateX(-50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.6);
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .close-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ============================================================
+       登录弹窗
+       ============================================================ */
+    #login-modal {
+      z-index: 200;
+    }
+
+    #login-modal .modal-content {
+      width: 85%;
+      max-width: 320px;
+    }
+
+    /* padding-top 技巧实现宽高比 690:966 ≈ 140% */
+    #login-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 140%;
+    }
+
+    #login-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    #login-form {
+      position: absolute;
+      top: 18%;
+      left: 8%;
+      right: 8%;
+      bottom: 28%;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-flex-direction: column;
+      -ms-flex-direction: column;
+      flex-direction: column;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 0 8px;
+    }
+
+    .input-box {
+      background: #fff8e7;
+      border-radius: 50px;
+      padding: 16px 20px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .input-box input {
+      width: 100%;
+      background: transparent;
+      font-size: 16px;
+      color: #333;
+    }
+
+    .input-box.code-box {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+
+    .input-box.code-box input {
+      -webkit-box-flex: 1;
+      -webkit-flex: 1;
+      -ms-flex: 1;
+      flex: 1;
+      min-width: 0;
+    }
+
+    #send-code-btn {
+      -webkit-flex-shrink: 0;
+      -ms-flex-negative: 0;
+      flex-shrink: 0;
+      color: #d92027;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    #send-code-btn:disabled {
+      opacity: 0.5;
+    }
+
+    #agreement {
+      position: absolute;
+      bottom: 26%;
+      left: 8%;
+      right: 8%;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+
+    #checkbox {
+      width: 16px;
+      height: 16px;
+      border-radius: 2px;
+      border: 2px solid #ccc;
+      background: #fff;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    #checkbox.checked {
+      background: #1890ff;
+      border-color: #1890ff;
+    }
+
+    #checkbox svg {
+      width: 12px;
+      height: 12px;
+      display: none;
+    }
+
+    #checkbox.checked svg {
+      display: block;
+    }
+
+    #agreement span {
+      color: #fff;
+      font-size: 12px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+
+    #agreement .link {
+      color: #1890ff;
+      text-decoration: underline;
+    }
+
+    #login-btn-area {
+      position: absolute;
+      bottom: 12%;
+      left: 10%;
+      right: 10%;
+      height: 12%;
+      cursor: pointer;
+    }
+
+    #login-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+      color: #999;
+      z-index: 10;
+    }
+
+    #login-close svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ============================================================
+       规则弹窗
+       ============================================================ */
+    #rules-modal .modal-content {
+      width: 90%;
+      max-width: 400px;
+    }
+
+    /* padding-top 技巧实现宽高比 3:4 = 133.33% */
+    #rules-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 133.33%;
+      background: #FFFBF0;
+      border-radius: 24px;
+      border: 4px solid #FAEBD7;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    #rules-inner {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      bottom: 12px;
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    #rules-scroll {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      padding: 8px 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #rules-scroll img {
+      width: 100%;
+    }
+
+    /* ============================================================
+       结果弹窗 - 全屏显示，两层图片重叠
+       ============================================================ */
+    #result-modal .modal-content {
+      width: 100%;
+      max-width: 480px;
+      height: 100%;
+      position: relative;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+
+    /* 结果卡片图片 - 全屏覆盖 */
+    #result-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* 收下福卡按钮 - 全屏覆盖，利用图片透明区域对位 */
+    #result-btn {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      padding: 0;
+      z-index: 10;
+    }
+
+    #result-btn img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* ============================================================
+       抽卡动画层
+       ============================================================ */
+    #draw-animation {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100;
+      display: none;
+      pointer-events: none;
+    }
+
+    #draw-animation img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      visibility: hidden;
+    }
+
+    #final-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 350;
+      display: none;
+      background: rgba(0, 0, 0, 0.85);
+      opacity: 0;
+      -webkit-transition: opacity 1s ease;
+      transition: opacity 1s ease;
+    }
+
+    /* 序列帧图片（只针对 .frame 类，不影响其他 img） */
+    #final-animation > img.frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      max-width: 480px;
+      -webkit-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+      object-fit: contain;
+      visibility: hidden;
+    }
+
+    /* 手机号显示 */
+    #final-phone {
+      position: absolute;
+      top: 62%;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      transform: translateX(-50%);
+      color: #fff;
+      font-size: 14px;
+      font-weight: bold;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      opacity: 0;
+      -webkit-transition: opacity 0.5s ease;
+      transition: opacity 0.5s ease;
+      z-index: 10;
+    }
+
+    /* 活动规则滚动区域 */
+    #final-scroll-area {
+      position: absolute;
+      top: 67%;
+      left: 50%;
+      -webkit-transform: translateX(-50%);
+      transform: translateX(-50%);
+      width: 65%;
+      max-width: 300px;
+      height: 12%;
+      border-radius: 12px;
+      overflow: hidden;
+      opacity: 0;
+      -webkit-transition: opacity 0.5s ease;
+      transition: opacity 0.5s ease;
+      z-index: 10;
+    }
+
+    #final-scroll-inner {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* 隐藏滚动条 */
+    #final-scroll-inner::-webkit-scrollbar {
+      display: none;
+    }
+
+    #final-scroll-inner {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    #final-scroll-inner img {
+      width: 100%;
+      display: block;
+    }
+
+    /* 透明关闭按钮 */
+    #final-close-btn {
+      position: absolute;
+      bottom: 5%;
+      left: 0;
+      right: 0;
+      height: 12%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      z-index: 20;
+      display: none;
+    }
+
+    /* ============================================================
+       Toast 提示
+       ============================================================ */
+    #toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      -webkit-transform: translate(-50%, -50%);
+      -ms-transform: translate(-50%, -50%);
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 16px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 600;
+      display: none;
+      max-width: 280px;
+      text-align: center;
+    }
+
+    /* ============================================================
+       Loading 遮罩
+       ============================================================ */
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 500;
+      display: none;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      -ms-flex-pack: center;
+      justify-content: center;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+
+    #loading-content {
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 16px 24px;
+      border-radius: 8px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: -ms-flexbox;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      -ms-flex-align: center;
+      align-items: center;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      margin-right: 12px;
+      -webkit-animation: spin 1s linear infinite;
+      animation: spin 1s linear infinite;
+    }
+
+    @-webkit-keyframes spin {
+      to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+    }
+
+    @keyframes spin {
+      to { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+    }
+
+    /* ============================================================
+       调试面板
+       ============================================================ */
+    #debug-toggle {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.3);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      z-index: 400;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    #debug-toggle svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    #debug-panel {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      width: 260px;
+      background: rgba(0, 0, 0, 0.85);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border-radius: 12px;
+      color: #fff;
+      font-size: 12px;
+      z-index: 400;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      display: none;
+    }
+
+    #debug-header {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+    }
+
+    #debug-header svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .debug-section {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .debug-section:last-child {
+      border-bottom: none;
+    }
+
+    .debug-label {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 11px;
+      margin-bottom: 6px;
+    }
+
+    .debug-row {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: justify;
+      -webkit-justify-content: space-between;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .debug-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .debug-btn {
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      -webkit-transition: all 0.2s;
+      transition: all 0.2s;
+      border: none;
+      color: #fff;
+    }
+
+    .debug-btn-mode {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .debug-btn-mode.active {
+      background: #22c55e;
+    }
+
+    .debug-btn-mode.active-blue {
+      background: #3b82f6;
+    }
+
+    .debug-btn-action {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .debug-btn-action:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .debug-btn-login {
+      background: rgba(168, 85, 247, 0.8);
+    }
+
+    .debug-btn-collect {
+      background: rgba(234, 179, 8, 0.8);
+    }
+
+    .debug-btn-draw {
+      background: rgba(249, 115, 22, 0.8);
+    }
+
+    .debug-btn-reset {
+      background: rgba(239, 68, 68, 0.8);
+    }
+
+    .debug-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .debug-grid {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-flex-wrap: wrap;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .debug-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .debug-grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+
+    .debug-cards {
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      gap: 4px;
+    }
+
+    .debug-card {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      font-size: 11px;
+      display: -webkit-box;
+      display: -webkit-flex;
+      display: flex;
+      -webkit-box-align: center;
+      -webkit-align-items: center;
+      align-items: center;
+      -webkit-box-pack: center;
+      -webkit-justify-content: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .debug-card.collected {
+      background: rgba(234, 179, 8, 0.8);
+      color: #fff;
+    }
+
+    .debug-hint {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.4);
+      margin-top: 6px;
+    }
+
+    .debug-status-value {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .debug-status-value.logged {
+      color: #4ade80;
+    }
+  </style>
+</head>
+<body>
+  <!-- ============================================================
+       主应用容器
+       ============================================================ -->
+  <div id="app">
+    <!-- 9:16 游戏容器 - 所有游戏元素的定位参照 -->
+    <div id="game-container">
+      <!-- 游戏背景 -->
+      <div id="game-background">
+        <img id="bg-img" src="/images/campaign/design/bg.png" alt="">
+      </div>
+
+      <!-- 游戏内容 - 所有子元素绝对定位 -->
+      <div id="game-content">
+        <!-- 顶部银联 Logo -->
+        <div id="header">
+          <img src="/images/campaign/design/unionpay-logo.png" alt="银联">
+        </div>
+
+        <!-- 标题区域 -->
+        <div id="title-area">
+          <img src="/images/campaign/design/title.png" alt="集福卡抽大奖">
+          <img id="subtitle" src="/images/campaign/design/subtitle.png" alt="农行哇宝请吃年夜饭啦">
+        </div>
+
+        <!-- 卡片区域 -->
+        <div id="card-area">
+          <div id="card-wrapper">
+            <div id="card-content">
+              <img id="card-img" src="/images/campaign/design/wabao-card.png" alt="福卡">
+            </div>
+          </div>
+
+          <!-- 按钮区域 -->
+          <div id="btn-area">
+            <button id="draw-btn" onclick="Game.drawCard()">
+              <img src="/images/campaign/design/draw-btn.png" alt="立即抽卡">
+            </button>
+            <button id="merge-btn" onclick="Game.showFinal()">
+              <img src="/images/campaign/design/merge-btn.png" alt="立即合成">
+            </button>
+          </div>
+        </div>
+
+        <!-- 收集槽 -->
+        <div id="slots">
+          <div id="slot-0" class="slot" onclick="Game.showSlotResult(0)">
+            <img class="slot-bg" src="/images/campaign/slots-new/slot-1.png" alt="马">
+            <div class="slot-content">
+              <img class="slot-img" src="/images/campaign/slots-new/shadow.png" alt="">
+            </div>
+          </div>
+          <div id="slot-1" class="slot" onclick="Game.showSlotResult(1)">
+            <img class="slot-bg" src="/images/campaign/slots-new/slot-2.png" alt="上">
+            <div class="slot-content">
+              <img class="slot-img" src="/images/campaign/slots-new/shadow.png" alt="">
+            </div>
+          </div>
+          <div id="slot-2" class="slot" onclick="Game.showSlotResult(2)">
+            <img class="slot-bg" src="/images/campaign/slots-new/slot-3.png" alt="发">
+            <div class="slot-content">
+              <img class="slot-img" src="/images/campaign/slots-new/shadow.png" alt="">
+            </div>
+          </div>
+          <div id="slot-3" class="slot" onclick="Game.showSlotResult(3)">
+            <img class="slot-bg" src="/images/campaign/slots-new/slot-4.png" alt="财">
+            <div class="slot-content">
+              <img class="slot-img" src="/images/campaign/slots-new/shadow.png" alt="">
+            </div>
+          </div>
+          <div id="slot-4" class="slot" onclick="Game.showSlotResult(4)">
+            <img class="slot-bg" src="/images/campaign/slots-new/slot-5.png" alt="哇">
+            <div class="slot-content">
+              <img class="slot-img" src="/images/campaign/slots-new/shadow.png" alt="">
+            </div>
+          </div>
+        </div>
+
+        <!-- 提示区域 -->
+        <div id="hint-area">
+          <img src="/images/campaign/design/hint-text.png" alt="集齐5张卡即可参与抽奖">
+        </div>
+
+        <!-- 规则按钮 -->
+        <button id="rules-btn" onclick="Modal.showRules()">
+          <img src="/images/campaign/design/rules-btn.png" alt="活动规则">
+        </button>
+
+        <!-- 音乐按钮 - 移到 game-content 内部 -->
+        <button id="music-btn" onclick="Game.toggleMusic()">
+          <img id="music-icon" src="/images/campaign/design/暂停按钮.png" alt="音乐">
+        </button>
+      </div>
+
+      <!-- 抽卡动画层 - 在 game-container 内部 -->
+      <div id="draw-animation">
+        <img id="draw-frame" src="" alt="">
+      </div>
+    </div>
+
+    <!-- 调试面板 - 收起状态 -->
+    <button id="debug-toggle" onclick="Debug.toggle()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+      </svg>
+    </button>
+
+    <!-- 调试面板 - 展开状态 -->
+    <div id="debug-panel">
+      <!-- 标题栏 -->
+      <div id="debug-header" onclick="Debug.toggle()">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          <span style="font-weight: 500;">调试面板</span>
+        </div>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7"></path>
+        </svg>
+      </div>
+
+      <!-- 模式切换 -->
+      <div class="debug-section">
+        <div class="debug-label">模式:</div>
+        <div class="debug-row">
+          <div class="debug-grid">
+            <button id="mode-test" class="debug-btn debug-btn-mode active" onclick="Debug.setMode(true)">测试</button>
+            <button id="mode-real" class="debug-btn debug-btn-mode" onclick="Debug.setMode(false)">真实</button>
+          </div>
+        </div>
+        <div id="mode-hint" class="debug-hint">⚡ 跳过API验证，纯前端测试</div>
+      </div>
+
+      <!-- 当前状态 -->
+      <div class="debug-section">
+        <div class="debug-row">
+          <span class="debug-label">登录:</span>
+          <span id="debug-phone" class="debug-status-value">未登录</span>
+        </div>
+        <div class="debug-row">
+          <span class="debug-label">收集:</span>
+          <div class="debug-cards">
+            <span id="debug-card-0" class="debug-card">马</span>
+            <span id="debug-card-1" class="debug-card">上</span>
+            <span id="debug-card-2" class="debug-card">发</span>
+            <span id="debug-card-3" class="debug-card">财</span>
+            <span id="debug-card-4" class="debug-card">哇</span>
+            <span id="debug-count" style="margin-left: 4px; color: rgba(255,255,255,0.4);">(0/5)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷操作 -->
+      <div class="debug-section">
+        <div class="debug-label">快捷操作:</div>
+        <div class="debug-grid-3">
+          <button id="btn-quick-login" class="debug-btn debug-btn-login" onclick="Debug.quickLogin()">快速登录</button>
+          <button class="debug-btn debug-btn-collect" onclick="Debug.setCards(1)">集1张</button>
+          <button class="debug-btn debug-btn-collect" onclick="Debug.setCards(2)">集2张</button>
+          <button class="debug-btn debug-btn-collect" onclick="Debug.setCards(3)">集3张</button>
+          <button class="debug-btn debug-btn-collect" onclick="Debug.setCards(4)">集4张</button>
+          <button class="debug-btn debug-btn-collect" onclick="Debug.setCards(5)">⭐集齐</button>
+        </div>
+      </div>
+
+      <!-- 抽指定卡 -->
+      <div class="debug-section">
+        <div class="debug-label">抽指定卡:</div>
+        <div class="debug-grid-5">
+          <button class="debug-btn debug-btn-draw" onclick="Debug.drawCard(0)">马</button>
+          <button class="debug-btn debug-btn-draw" onclick="Debug.drawCard(1)">上</button>
+          <button class="debug-btn debug-btn-draw" onclick="Debug.drawCard(2)">发</button>
+          <button class="debug-btn debug-btn-draw" onclick="Debug.drawCard(3)">财</button>
+          <button class="debug-btn debug-btn-draw" onclick="Debug.drawCard(4)">哇</button>
+        </div>
+      </div>
+
+      <!-- 重置操作 -->
+      <div class="debug-section">
+        <div class="debug-label">重置:</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="debug-btn debug-btn-action" style="flex: 1;" onclick="Debug.resetSmall()">↻ 小重置</button>
+          <button class="debug-btn debug-btn-reset" style="flex: 1;" onclick="Debug.resetLarge()">↻ 大重置</button>
+        </div>
+        <div class="debug-hint">小=保留登录 | 大=清除全部</div>
+      </div>
+    </div>
+
+    <!-- 欢迎页 -->
+    <div id="welcome-page" onclick="Game.start()">
+      <img id="welcome-bg" src="/images/welcome-cover.png" alt="">
+      <img id="start-btn" src="/images/start-btn.png" alt="点击进入">
+    </div>
+
+    <!-- 登录弹窗 -->
+    <div id="login-modal" class="modal">
+      <div class="modal-content">
+        <div id="login-wrapper">
+          <img id="login-bg" src="/images/campaign/modals/login-modal.png" alt="绑定手机号">
+
+          <div id="login-form">
+            <div class="input-box">
+              <input id="phone-input" type="tel" placeholder="请输入手机号" maxlength="11">
+            </div>
+            <div class="input-box code-box">
+              <input id="code-input" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="请输入验证码" maxlength="6">
+              <button id="send-code-btn" onclick="Game.sendCode()">获取验证码</button>
+            </div>
+          </div>
+
+          <div id="agreement">
+            <div id="checkbox" class="checked" onclick="Game.toggleAgreement()">
+              <svg fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <span onclick="Modal.showRules()">我已阅读并知悉<span class="link">本活动详情</span></span>
+          </div>
+
+          <div id="login-btn-area" onclick="Game.login()"></div>
+        </div>
+
+        <button id="login-close" onclick="Modal.hideLogin()">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 规则弹窗 -->
+    <div id="rules-modal" class="modal" onclick="Modal.hideRules()">
+      <div class="modal-content" onclick="event.stopPropagation()">
+        <div id="rules-wrapper">
+          <div id="rules-inner">
+            <div id="rules-scroll">
+              <img src="/images/campaign/modals/rules.png" alt="活动规则">
+            </div>
+          </div>
+        </div>
+        <button class="close-btn" onclick="Modal.hideRules()">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 结果弹窗 -->
+    <div id="result-modal" class="modal">
+      <div class="modal-content">
+        <img id="result-img" src="" alt="抽卡结果">
+        <button id="result-btn" onclick="Modal.hideResult()">
+          <img src="/images/campaign/modals/收下福卡按钮.png" alt="收下福卡">
+        </button>
+      </div>
+    </div>
+
+    <!-- 最终动画层（合并弹窗功能） -->
+    <div id="final-animation">
+      <!-- 序列帧图片会动态插入这里 -->
+
+      <!-- 手机号显示 -->
+      <div id="final-phone"></div>
+
+      <!-- 活动规则滚动区域 -->
+      <div id="final-scroll-area">
+        <div id="final-scroll-inner">
+          <img src="/images/campaign/modals/rules.png" alt="活动规则">
+        </div>
+      </div>
+
+      <!-- 透明关闭按钮 -->
+      <button id="final-close-btn" onclick="Modal.hideFinal()"></button>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toast"></div>
+
+    <!-- Loading 遮罩 -->
+    <div id="loading">
+      <div id="loading-content">
+        <div class="spinner"></div>
+        <span id="loading-text">加载中...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 背景音乐 -->
+  <audio id="bgm" src="/audio/bgm.mp3" loop preload="auto"></audio>
+
+  <!-- ============================================================
+       JavaScript - ES5 语法
+       ============================================================ -->
+  <script>
+    (function() {
+      'use strict';
+
+      // ============================================================
+      // 配置
+      // ============================================================
+      var CONFIG = {
+        API_BASE: 'https://1331245644-lnsmyztba1.ap-guangzhou.tencentscf.com',
+        CARDS: ['马', '上', '发', '财', '哇'],
+        CARD_FOLDERS: ['ma', 'shang', 'fa', 'cai', 'wa'],
+        SLOT_IMAGES: [
+          '/images/campaign/slots-new/ma.png',
+          '/images/campaign/slots-new/shang.png',
+          '/images/campaign/slots-new/fa.png',
+          '/images/campaign/slots-new/cai.png',
+          '/images/campaign/slots-new/wa.png'
+        ],
+        RESULT_IMAGES: [
+          '/images/campaign/modals/result-ma-new.png',
+          '/images/campaign/modals/result-shang-new.png',
+          '/images/campaign/modals/result-fa-new.png',
+          '/images/campaign/modals/result-cai-new.png',
+          '/images/campaign/modals/result-wa-new.png'
+        ],
+        SHADOW_IMAGE: '/images/campaign/slots-new/shadow.png',
+        SLOT_DEFAULT_IMAGES: [
+          '/images/campaign/slots-new/slot-1.png',
+          '/images/campaign/slots-new/slot-2.png',
+          '/images/campaign/slots-new/slot-3.png',
+          '/images/campaign/slots-new/slot-4.png',
+          '/images/campaign/slots-new/slot-5.png'
+        ],
+        DRAW_FPS: 15,
+        DRAW_COMMON_FRAMES: 0,
+        DRAW_CARD_FRAMES: 48,
+        HORSE_FPS: 15,
+        HORSE_FRAMES: 127
+      };
+
+      // ============================================================
+      // 状态
+      // ============================================================
+      var State = {
+        userPhone: '',
+        token: '',
+        collected: [false, false, false, false, false],
+        hasDrawnToday: false,
+        currentResult: null,
+        isDrawing: false,
+        countdown: 0,
+        countdownTimer: null,
+        agreed: true,
+        isMusicPlaying: false,
+        frameCache: {},
+        drawFramesPreloaded: false  // 标记抽卡动画帧是否已预加载
+      };
+
+      // ============================================================
+      // 工具函数
+      // ============================================================
+      var Utils = {
+        // 获取元素
+        $: function(id) {
+          return document.getElementById(id);
+        },
+
+        // 显示元素
+        show: function(id) {
+          var el = Utils.$(id);
+          if (el) {
+            el.style.display = 'flex';
+          }
+        },
+
+        // 隐藏元素
+        hide: function(id) {
+          var el = Utils.$(id);
+          if (el) {
+            el.style.display = 'none';
+          }
+        },
+
+        // 显示 Toast
+        toast: function(msg) {
+          var el = Utils.$('toast');
+          if (el) {
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(function() {
+              el.style.display = 'none';
+            }, 2500);
+          }
+        },
+
+        // 显示 Loading
+        showLoading: function() {
+          Utils.show('loading');
+        },
+
+        // 隐藏 Loading
+        hideLoading: function() {
+          Utils.hide('loading');
+        },
+
+        // 生成设备ID
+        getDeviceId: function() {
+          var deviceId = localStorage.getItem('deviceId');
+          if (!deviceId) {
+            deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('deviceId', deviceId);
+          }
+          return deviceId;
+        },
+
+        // 格式化帧序号
+        padFrame: function(num) {
+          var s = '00000' + num;
+          return s.substr(s.length - 5);
+        },
+
+        // 预加载图片
+        preloadImage: function(src, callback) {
+          if (State.frameCache[src]) {
+            if (callback) callback(State.frameCache[src]);
+            return;
+          }
+          var img = new Image();
+          img.onload = function() {
+            State.frameCache[src] = img;
+            if (callback) callback(img);
+          };
+          img.onerror = function() {
+            if (callback) callback(null);
+          };
+          img.src = src;
+        },
+
+        // 批量预加载
+        preloadImages: function(srcs, callback) {
+          var loaded = 0;
+          var total = srcs.length;
+          for (var i = 0; i < total; i++) {
+            Utils.preloadImage(srcs[i], function() {
+              loaded++;
+              if (loaded >= total && callback) {
+                callback();
+              }
+            });
+          }
+        },
+
+        // 手机号脱敏
+        maskPhone: function(phone) {
+          if (!phone || phone.length !== 11) return phone || '';
+          return phone.slice(0, 3) + '****' + phone.slice(7);
+        }
+      };
+
+      // ============================================================
+      // 布局控制 - 9:16 容器计算
+      // ============================================================
+      var Layout = {
+        // 计算并应用 9:16 容器尺寸
+        resizeContainer: function() {
+          var container = Utils.$('game-container');
+          if (!container) return;
+
+          var screenW = window.innerWidth;
+          var screenH = window.innerHeight;
+          var maxW = 480;
+
+          // 计算容器宽度（不超过 480px 和屏幕宽度）
+          var containerW = screenW < maxW ? screenW : maxW;
+
+          // 计算 9:16 对应的高度
+          var idealH = containerW * (16 / 9);
+
+          // 如果理想高度超过屏幕高度，按屏幕高度反推宽度
+          var containerH, finalW;
+          if (idealH > screenH) {
+            containerH = screenH;
+            finalW = containerH * (9 / 16);
+          } else {
+            containerH = idealH;
+            finalW = containerW;
+          }
+
+          // 应用尺寸
+          container.style.width = finalW + 'px';
+          container.style.height = containerH + 'px';
+        },
+
+        // 初始化布局
+        init: function() {
+          Layout.resizeContainer();
+          // 窗口大小变化时重新计算
+          window.addEventListener('resize', Layout.resizeContainer);
+          // 方向变化时也重新计算
+          window.addEventListener('orientationchange', function() {
+            setTimeout(Layout.resizeContainer, 100);
+          });
+        }
+      };
+
+      // ============================================================
+      // API 请求
+      // ============================================================
+      var API = {
+        request: function(endpoint, method, data, callback) {
+          var xhr = new XMLHttpRequest();
+          xhr.open(method, CONFIG.API_BASE + endpoint, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+
+          if (State.token) {
+            xhr.setRequestHeader('Authorization', 'Bearer ' + State.token);
+          }
+
+          xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+              try {
+                var resp = JSON.parse(xhr.responseText);
+                callback(resp);
+              } catch (e) {
+                callback({ success: false, error: '网络错误' });
+              }
+            }
+          };
+
+          xhr.onerror = function() {
+            callback({ success: false, error: '网络错误' });
+          };
+
+          if (data) {
+            xhr.send(JSON.stringify(data));
+          } else {
+            xhr.send();
+          }
+        },
+
+        sendCode: function(phone, callback) {
+          API.request('/api/auth/send-code', 'POST', {
+            phone: phone,
+            deviceId: Utils.getDeviceId()
+          }, callback);
+        },
+
+        verifyCode: function(phone, code, callback) {
+          API.request('/api/auth/verify-code', 'POST', {
+            phone: phone,
+            code: code,
+            deviceId: Utils.getDeviceId()
+          }, callback);
+        },
+
+        drawCard: function(callback) {
+          API.request('/api/card/draw', 'POST', {
+            deviceId: Utils.getDeviceId()
+          }, callback);
+        },
+
+        getUserStatus: function(callback) {
+          API.request('/api/user/status', 'GET', null, callback);
+        }
+      };
+
+      // ============================================================
+      // 弹窗控制
+      // ============================================================
+      var Modal = {
+        showLogin: function() {
+          Utils.show('login-modal');
+        },
+
+        hideLogin: function() {
+          Utils.hide('login-modal');
+        },
+
+        showRules: function() {
+          Utils.show('rules-modal');
+        },
+
+        hideRules: function() {
+          Utils.hide('rules-modal');
+        },
+
+        showResult: function(cardIndex) {
+          var img = Utils.$('result-img');
+          if (img) {
+            img.src = CONFIG.RESULT_IMAGES[cardIndex];
+          }
+          Utils.show('result-modal');
+        },
+
+        hideResult: function() {
+          Utils.hide('result-modal');
+          // 检查是否集齐
+          Game.checkComplete();
+        },
+
+        showFinal: function() {
+          // 不再需要单独显示弹窗，动画播放后会自动显示叠加内容
+          // 保留此函数以兼容旧代码调用
+        },
+
+        hideFinal: function() {
+          var container = Utils.$('final-animation');
+          if (container) {
+            // 渐出
+            container.style.opacity = '0';
+            setTimeout(function() {
+              container.style.display = 'none';
+              // 重置叠加内容
+              var phone = Utils.$('final-phone');
+              var scroll = Utils.$('final-scroll-area');
+              var closeBtn = Utils.$('final-close-btn');
+              if (phone) phone.style.opacity = '0';
+              if (scroll) scroll.style.opacity = '0';
+              if (closeBtn) closeBtn.style.display = 'none';
+              // 清除动态创建的帧（只删除 .frame 类的图片，保留其他元素）
+              var frames = container.querySelectorAll('img.frame');
+              for (var i = 0; i < frames.length; i++) {
+                container.removeChild(frames[i]);
+              }
+            }, 1000);
+          }
+        }
+      };
+
+      // 挂载到全局
+      window.Modal = Modal;
+
+      // ============================================================
+      // 调试面板
+      // ============================================================
+      var Debug = {
+        isExpanded: false,
+        testMode: true,  // 默认测试模式
+
+        // 切换面板展开/收起
+        toggle: function() {
+          this.isExpanded = !this.isExpanded;
+          var toggleBtn = Utils.$('debug-toggle');
+          var panel = Utils.$('debug-panel');
+          if (toggleBtn) toggleBtn.style.display = this.isExpanded ? 'none' : 'flex';
+          if (panel) panel.style.display = this.isExpanded ? 'block' : 'none';
+          if (this.isExpanded) this.updateStatus();
+        },
+
+        // 设置模式
+        setMode: function(isTest) {
+          this.testMode = isTest;
+          var testBtn = Utils.$('mode-test');
+          var realBtn = Utils.$('mode-real');
+          var hint = Utils.$('mode-hint');
+
+          if (testBtn) {
+            testBtn.className = isTest ? 'debug-btn debug-btn-mode active' : 'debug-btn debug-btn-mode';
+          }
+          if (realBtn) {
+            realBtn.className = isTest ? 'debug-btn debug-btn-mode' : 'debug-btn debug-btn-mode active-blue';
+          }
+          if (hint) {
+            hint.textContent = isTest ? '⚡ 跳过API验证，纯前端测试' : '🔗 调用真实API，数据库同步';
+          }
+        },
+
+        // 快速登录（测试模式）
+        quickLogin: function() {
+          if (!this.testMode) {
+            Utils.toast('请先切换到测试模式');
+            return;
+          }
+          if (State.userPhone) {
+            Utils.toast('已经登录');
+            return;
+          }
+          State.userPhone = '13800138000';
+          State.token = 'test_token_' + Date.now();
+          localStorage.setItem('abc_user_phone', State.userPhone);
+          localStorage.setItem('abc_token', State.token);
+          this.updateStatus();
+          Utils.toast('测试登录成功');
+        },
+
+        // 设置收集卡片数量
+        setCards: function(count) {
+          var newCollected = [false, false, false, false, false];
+          for (var i = 0; i < count && i < 5; i++) {
+            newCollected[i] = true;
+          }
+          State.collected = newCollected;
+          localStorage.setItem('abc_collected', JSON.stringify(newCollected));
+          Game.updateSlots();
+          Game.checkComplete();
+          this.updateStatus();
+          Utils.toast('已设置' + count + '张卡');
+        },
+
+        // 抽指定卡
+        drawCard: function(cardIndex) {
+          if (!this.testMode) {
+            Utils.toast('抽指定卡只在测试模式下可用');
+            return;
+          }
+
+          // 防止重复点击
+          if (State.isDrawing) {
+            Utils.toast('抽卡中...');
+            return;
+          }
+          State.isDrawing = true;
+
+          State.currentResult = cardIndex;
+          State.collected[cardIndex] = true;
+          localStorage.setItem('abc_collected', JSON.stringify(State.collected));
+
+          var self = this;
+          Animation.playDrawAnimation(cardIndex, function() {
+            // 动画完成
+            State.isDrawing = false;
+          }, function() {
+            // 动画快完成时显示结果
+            Game.updateSlots();
+            Modal.showResult(cardIndex);
+            self.updateStatus();
+          });
+        },
+
+        // 小重置（保留登录，重置卡片）
+        resetSmall: function() {
+          State.collected = [false, false, false, false, false];
+          State.hasDrawnToday = false;
+          State.currentResult = null;
+          localStorage.setItem('abc_collected', JSON.stringify(State.collected));
+          localStorage.removeItem('lastDrawDate');
+          Game.updateSlots();
+          Game.checkComplete();
+          this.updateStatus();
+          Utils.toast('已重置卡片');
+        },
+
+        // 大重置（清除全部数据）
+        resetLarge: function() {
+          localStorage.removeItem('abc_user_phone');
+          localStorage.removeItem('abc_token');
+          localStorage.removeItem('abc_collected');
+          localStorage.removeItem('lastDrawDate');
+          State.userPhone = '';
+          State.token = '';
+          State.collected = [false, false, false, false, false];
+          State.hasDrawnToday = false;
+          State.currentResult = null;
+          Game.updateSlots();
+          Game.checkComplete();
+          this.updateStatus();
+          Utils.toast('已清除全部数据');
+        },
+
+        // 更新面板状态显示
+        updateStatus: function() {
+          // 更新手机号显示
+          var phoneEl = Utils.$('debug-phone');
+          if (phoneEl) {
+            if (State.userPhone) {
+              var phone = State.userPhone;
+              var masked = phone.length === 11
+                ? phone.slice(0, 3) + '****' + phone.slice(7)
+                : phone;
+              phoneEl.textContent = masked;
+              phoneEl.className = 'debug-status-value logged';
+            } else {
+              phoneEl.textContent = '未登录';
+              phoneEl.className = 'debug-status-value';
+            }
+          }
+
+          // 更新快速登录按钮状态
+          var loginBtn = Utils.$('btn-quick-login');
+          if (loginBtn) {
+            loginBtn.disabled = !!State.userPhone;
+          }
+
+          // 更新卡片收集状态
+          var count = 0;
+          for (var i = 0; i < 5; i++) {
+            var cardEl = Utils.$('debug-card-' + i);
+            if (cardEl) {
+              if (State.collected[i]) {
+                cardEl.className = 'debug-card collected';
+                count++;
+              } else {
+                cardEl.className = 'debug-card';
+              }
+            }
+          }
+
+          // 更新计数
+          var countEl = Utils.$('debug-count');
+          if (countEl) {
+            countEl.textContent = '(' + count + '/5)';
+          }
+        }
+      };
+
+      // 挂载到全局
+      window.Debug = Debug;
+
+      // ============================================================
+      // 动画控制 - 预加载 + visibility 切换方案
+      // ============================================================
+      var Animation = {
+        drawFrames: [],      // 抽卡帧 img 元素数组
+        horseFrames: [],     // 骑马帧 img 元素数组
+        currentTimer: null,
+
+        // 静默预加载图片（不创建 DOM，只缓存到内存）
+        silentPreload: function(paths, onComplete, onProgress) {
+          var loaded = 0;
+          var total = paths.length;
+
+          for (var i = 0; i < total; i++) {
+            (function(index) {
+              var img = new Image();
+              img.onload = img.onerror = function() {
+                loaded++;
+                State.frameCache[paths[index]] = img;
+                if (onProgress) onProgress(loaded, total);
+                if (loaded >= total && onComplete) onComplete();
+              };
+              img.src = paths[index];
+            })(i);
+          }
+        },
+
+        // 预加载所有抽卡动画帧（新版本：5种卡片各48帧，共240帧）
+        preloadAllDrawFrames: function(onComplete) {
+          var paths = [];
+
+          // 所有 5 种卡片的完整 48 帧
+          for (var c = 0; c < CONFIG.CARD_FOLDERS.length; c++) {
+            var folder = CONFIG.CARD_FOLDERS[c];
+            for (var i = 0; i < 48; i++) {
+              paths.push('/images/frames/card-spin/' + folder + '/集福卡_' + Utils.padFrame(i) + '.png');
+            }
+          }
+
+          Animation.silentPreload(paths, onComplete);
+        },
+
+        // 从缓存创建 DOM 元素（同步，无需等待）
+        createFramesFromCache: function(container, paths, callback) {
+          var frames = [];
+          container.innerHTML = '';
+
+          for (var i = 0; i < paths.length; i++) {
+            var cachedImg = State.frameCache[paths[i]];
+            var img = document.createElement('img');
+            img.src = cachedImg ? cachedImg.src : paths[i];
+            img.style.visibility = 'hidden';
+            container.appendChild(img);
+            frames[i] = img;
+          }
+
+          if (callback) callback(frames);
+        },
+
+        // 预加载并创建所有帧的 img 元素
+        preloadAndCreateFrames: function(container, paths, callback, onProgress) {
+          var loaded = 0;
+          var total = paths.length;
+          var frames = [];
+
+          // 清除之前的帧图片（保留其他元素如叠加层）
+          var oldFrames = container.querySelectorAll('img.frame');
+          for (var j = 0; j < oldFrames.length; j++) {
+            container.removeChild(oldFrames[j]);
+          }
+
+          for (var i = 0; i < total; i++) {
+            (function(index) {
+              var img = document.createElement('img');
+              img.className = 'frame'; // 添加 class 以便后续清理
+              img.style.visibility = 'hidden';
+
+              img.onload = function() {
+                loaded++;
+                if (onProgress) onProgress(loaded, total);
+                if (loaded >= total && callback) callback(frames);
+              };
+
+              img.onerror = function() {
+                console.error('Failed to load:', paths[index]);
+                loaded++;
+                if (loaded >= total && callback) callback(frames);
+              };
+
+              img.src = paths[index];
+              // 插入到容器最前面，确保叠加元素在上面
+              if (container.firstChild) {
+                container.insertBefore(img, container.firstChild);
+              } else {
+                container.appendChild(img);
+              }
+              frames[index] = img;
+            })(i);
+          }
+
+          return frames;
+        },
+
+        // 使用 visibility 切换播放动画
+        playWithVisibility: function(frames, fps, onComplete, onNearComplete) {
+          var currentFrame = 0;
+          var totalFrames = frames.length;
+          var interval = 1000 / fps;
+          var nearCompleteFrame = totalFrames - 12;
+          var nearCompleteCalled = false;
+          var lastFrame = null;
+
+          // 清除之前的定时器
+          if (Animation.currentTimer) {
+            clearInterval(Animation.currentTimer);
+          }
+
+          var playFrame = function() {
+            // 隐藏上一帧
+            if (lastFrame) {
+              lastFrame.style.visibility = 'hidden';
+            }
+
+            // 显示当前帧
+            var frame = frames[currentFrame];
+            if (frame) {
+              frame.style.visibility = 'visible';
+              lastFrame = frame;
+            }
+
+            // 提前触发回调
+            if (!nearCompleteCalled && currentFrame >= nearCompleteFrame) {
+              nearCompleteCalled = true;
+              if (onNearComplete) onNearComplete();
+            }
+
+            currentFrame++;
+
+            if (currentFrame >= totalFrames) {
+              clearInterval(Animation.currentTimer);
+              Animation.currentTimer = null;
+              if (onComplete) onComplete();
+            }
+          };
+
+          Animation.currentTimer = setInterval(playFrame, interval);
+          playFrame(); // 立即播放第一帧
+        },
+
+        // 播放抽卡动画
+        playDrawAnimation: function(cardIndex, onComplete, onNearComplete) {
+          var container = Utils.$('draw-animation');
+          var cardArea = Utils.$('card-area');
+          if (!container) {
+            if (onComplete) onComplete();
+            return;
+          }
+
+          // 隐藏主卡片区域
+          if (cardArea) {
+            cardArea.style.opacity = '0';
+          }
+
+          container.style.display = 'block';
+
+          // 生成帧路径 (新版本: 每种卡片完整 48 帧，无需 common)
+          var paths = [];
+          var folder = CONFIG.CARD_FOLDERS[cardIndex];
+          for (var i = 0; i < 48; i++) {
+            paths.push('/images/frames/card-spin/' + folder + '/集福卡_' + Utils.padFrame(i) + '.png');
+          }
+
+          // 检查是否已预加载
+          var allCached = paths.every(function(p) {
+            return State.frameCache[p];
+          });
+
+          // 播放动画的通用逻辑
+          var playAnimation = function(frames) {
+            Animation.drawFrames = frames;
+            Animation.playWithVisibility(frames, CONFIG.DRAW_FPS, function() {
+              // 隐藏所有帧
+              for (var k = 0; k < frames.length; k++) {
+                frames[k].style.visibility = 'hidden';
+              }
+              container.style.display = 'none';
+              // 恢复主卡片区域显示
+              if (cardArea) {
+                cardArea.style.opacity = '1';
+              }
+              if (onComplete) onComplete();
+            }, onNearComplete);
+          };
+
+          if (allCached) {
+            // 已预加载，直接创建 DOM 并播放（无需显示 loading）
+            Animation.createFramesFromCache(container, paths, playAnimation);
+          } else {
+            // 未预加载，走原有流程（显示 loading）
+            Utils.showLoading();
+            var loadingText = Utils.$('loading-text');
+            if (loadingText) {
+              loadingText.textContent = '加载动画 0%';
+            }
+
+            Animation.preloadAndCreateFrames(container, paths, function(frames) {
+              Utils.hideLoading();
+              playAnimation(frames);
+            }, function(loaded, total) {
+              // 更新加载进度
+              var percent = Math.round(loaded / total * 100);
+              var loadingText = Utils.$('loading-text');
+              if (loadingText) {
+                loadingText.textContent = '加载动画 ' + percent + '%';
+              }
+            });
+          }
+        },
+
+        // 播放骑马动画
+        playHorseAnimation: function(onComplete) {
+          var container = Utils.$('final-animation');
+          if (!container) {
+            if (onComplete) onComplete();
+            return;
+          }
+
+          // 显示容器但初始透明
+          container.style.display = 'block';
+          container.style.opacity = '0';
+
+          // 10ms 后开始渐入（触发 CSS transition）
+          setTimeout(function() {
+            container.style.opacity = '1';
+          }, 10);
+
+          // 6.5秒后显示叠加内容（手机号 + 滚动区域 + 关闭按钮）
+          setTimeout(function() {
+            var phone = Utils.$('final-phone');
+            var scroll = Utils.$('final-scroll-area');
+            var closeBtn = Utils.$('final-close-btn');
+
+            if (phone) {
+              phone.textContent = '用户: ' + Utils.maskPhone(State.userPhone);
+              phone.style.opacity = '1';
+            }
+            if (scroll) scroll.style.opacity = '1';
+            if (closeBtn) closeBtn.style.display = 'block';
+          }, 6500);
+
+          // 生成帧路径
+          var paths = [];
+          for (var i = 0; i < CONFIG.HORSE_FRAMES; i++) {
+            paths.push('/images/frames/horse-ride/骑马青蛙_' + Utils.padFrame(i) + '.png');
+          }
+
+          // 显示加载提示
+          Utils.showLoading();
+          var loadingText = Utils.$('loading-text');
+          if (loadingText) {
+            loadingText.textContent = '加载动画 0%';
+          }
+
+          // 预加载并创建帧
+          Animation.preloadAndCreateFrames(container, paths, function(frames) {
+            Utils.hideLoading();
+            Animation.horseFrames = frames;
+
+            // 播放动画，播完后保持最后一帧显示
+            Animation.playWithVisibility(frames, CONFIG.HORSE_FPS, function() {
+              // 动画播放完成，保持最后一帧显示（不隐藏）
+              if (onComplete) onComplete();
+            });
+          }, function(loaded, total) {
+            var percent = Math.round(loaded / total * 100);
+            var loadingText = Utils.$('loading-text');
+            if (loadingText) {
+              loadingText.textContent = '加载动画 ' + percent + '%';
+            }
+          });
+        }
+      };
+
+      // ============================================================
+      // 游戏逻辑
+      // ============================================================
+      var Game = {
+        // 开始游戏
+        start: function() {
+          Utils.hide('welcome-page');
+          Utils.$('game-background').style.display = 'block';
+          Utils.$('game-content').style.display = 'block';
+
+          // 播放音乐
+          var bgm = Utils.$('bgm');
+          if (bgm) {
+            bgm.play().then(function() {
+              State.isMusicPlaying = true;
+              Utils.$('music-icon').src = '/images/campaign/design/播放按钮.png';
+            }).catch(function() {});
+          }
+
+          // 后台静默预加载抽卡动画帧
+          if (!State.drawFramesPreloaded) {
+            Animation.preloadAllDrawFrames(function() {
+              State.drawFramesPreloaded = true;
+              console.log('抽卡动画帧预加载完成 (240张)');
+            });
+          }
+        },
+
+        // 切换音乐
+        toggleMusic: function() {
+          var bgm = Utils.$('bgm');
+          var icon = Utils.$('music-icon');
+          if (!bgm || !icon) return;
+
+          if (State.isMusicPlaying) {
+            bgm.pause();
+            icon.src = '/images/campaign/design/暂停按钮.png';
+          } else {
+            bgm.play().catch(function() {});
+            icon.src = '/images/campaign/design/播放按钮.png';
+          }
+          State.isMusicPlaying = !State.isMusicPlaying;
+        },
+
+        // 抽卡
+        drawCard: function() {
+          // 检查登录
+          if (!State.userPhone) {
+            Modal.showLogin();
+            return;
+          }
+
+          // 检查今日是否已抽
+          if (State.hasDrawnToday) {
+            Utils.toast('每天可抽卡一次，请明天再来哦');
+            return;
+          }
+
+          // 检查是否已集齐
+          if (Game.isAllCollected()) {
+            Game.showFinal();
+            return;
+          }
+
+          // 防止重复点击
+          if (State.isDrawing) return;
+          State.isDrawing = true;
+
+          // 调用 API
+          API.drawCard(function(result) {
+            if (result.success && result.data) {
+              State.hasDrawnToday = true;
+              localStorage.setItem('lastDrawDate', new Date().toDateString());
+
+              var cardIndex = result.data.cardIndex;
+              State.currentResult = cardIndex;
+
+              // 更新收集状态
+              if (result.data.cards) {
+                State.collected = result.data.cards;
+                localStorage.setItem('abc_collected', JSON.stringify(result.data.cards));
+              }
+
+              // 播放动画
+              Animation.playDrawAnimation(cardIndex, function() {
+                // 动画完成
+                State.isDrawing = false;
+              }, function() {
+                // 动画快完成时显示结果
+                Game.updateSlots();
+                Modal.showResult(cardIndex);
+              });
+            } else {
+              State.isDrawing = false;
+              var errorMsg = result.error || '抽卡失败';
+              if (errorMsg.indexOf('今天已经抽过') >= 0 || errorMsg.indexOf('明天再来') >= 0) {
+                State.hasDrawnToday = true;
+                localStorage.setItem('lastDrawDate', new Date().toDateString());
+                Utils.toast('每天可抽卡一次，请明天再来哦');
+              } else {
+                Utils.toast(errorMsg);
+              }
+            }
+          });
+        },
+
+        // 发送验证码
+        sendCode: function() {
+          var phoneInput = Utils.$('phone-input');
+          if (!phoneInput) return;
+
+          var phone = phoneInput.value;
+          if (phone.length !== 11) {
+            Utils.toast('请输入正确的11位手机号');
+            return;
+          }
+
+          if (State.countdown > 0) return;
+
+          State.countdown = 60;
+          Game.updateCountdown();
+
+          API.sendCode(phone, function(result) {
+            if (!result.success) {
+              Utils.toast(result.error || '发送失败');
+            }
+          });
+        },
+
+        // 更新倒计时
+        updateCountdown: function() {
+          var btn = Utils.$('send-code-btn');
+          if (btn) {
+            if (State.countdown > 0) {
+              btn.textContent = State.countdown + 's';
+              btn.disabled = true;
+            } else {
+              btn.textContent = '获取验证码';
+              btn.disabled = false;
+            }
+          }
+
+          if (State.countdown > 0) {
+            State.countdown--;
+            State.countdownTimer = setTimeout(Game.updateCountdown, 1000);
+          }
+        },
+
+        // 切换同意状态
+        toggleAgreement: function() {
+          State.agreed = !State.agreed;
+          var checkbox = Utils.$('checkbox');
+          if (checkbox) {
+            if (State.agreed) {
+              checkbox.className = 'checked';
+            } else {
+              checkbox.className = '';
+            }
+          }
+        },
+
+        // 登录
+        login: function() {
+          if (!State.agreed) {
+            Utils.toast('请先阅读并同意活动详情');
+            return;
+          }
+
+          var phoneInput = Utils.$('phone-input');
+          var codeInput = Utils.$('code-input');
+          if (!phoneInput || !codeInput) return;
+
+          var phone = phoneInput.value;
+          var code = codeInput.value;
+
+          if (phone.length !== 11) {
+            Utils.toast('请输入正确的11位手机号');
+            return;
+          }
+
+          if (code.length !== 6) {
+            Utils.toast('请输入6位验证码');
+            return;
+          }
+
+          Utils.showLoading();
+
+          API.verifyCode(phone, code, function(result) {
+            Utils.hideLoading();
+
+            if (result.success && result.token) {
+              State.userPhone = phone;
+              State.token = result.token;
+              localStorage.setItem('abc_user_phone', phone);
+              localStorage.setItem('abc_token', result.token);
+
+              Modal.hideLogin();
+
+              // 获取用户状态
+              API.getUserStatus(function(status) {
+                if (status.success && status.data) {
+                  State.collected = status.data.cards || [false, false, false, false, false];
+                  localStorage.setItem('abc_collected', JSON.stringify(State.collected));
+
+                  if (status.data.lastDrawAt) {
+                    var lastDraw = new Date(status.data.lastDrawAt);
+                    var today = new Date();
+                    if (lastDraw.toDateString() === today.toDateString()) {
+                      State.hasDrawnToday = true;
+                    }
+                  }
+
+                  Game.updateSlots();
+                  Game.checkComplete();
+                }
+              });
+            } else {
+              Utils.toast(result.error || '验证失败，请重试');
+            }
+          });
+        },
+
+        // 更新卡槽显示
+        updateSlots: function() {
+          var shadowImg = CONFIG.SHADOW_IMAGE;
+          for (var i = 0; i < 5; i++) {
+            var slot = Utils.$('slot-' + i);
+            if (slot) {
+              var img = slot.querySelector('.slot-img');
+              if (State.collected[i]) {
+                slot.className = 'slot collected';
+                if (img) img.src = CONFIG.SLOT_IMAGES[i];
+              } else {
+                slot.className = 'slot';
+                if (img) img.src = shadowImg;
+              }
+            }
+          }
+        },
+
+        // 点击卡槽显示结果
+        showSlotResult: function(index) {
+          if (State.collected[index]) {
+            Modal.showResult(index);
+          }
+        },
+
+        // 检查是否全部收集
+        isAllCollected: function() {
+          for (var i = 0; i < State.collected.length; i++) {
+            if (!State.collected[i]) return false;
+          }
+          return true;
+        },
+
+        // 检查完成状态并更新按钮
+        checkComplete: function() {
+          var drawBtn = Utils.$('draw-btn');
+          var mergeBtn = Utils.$('merge-btn');
+
+          if (Game.isAllCollected()) {
+            if (drawBtn) drawBtn.style.display = 'none';
+            if (mergeBtn) mergeBtn.style.display = 'block';
+          } else {
+            if (drawBtn) drawBtn.style.display = 'block';
+            if (mergeBtn) mergeBtn.style.display = 'none';
+          }
+        },
+
+        // 显示最终弹窗
+        showFinal: function() {
+          // 先播放骑马动画
+          Animation.playHorseAnimation(function() {
+            // 动画完成后显示弹窗
+            Modal.showFinal();
+          });
+        },
+
+        // 初始化
+        init: function() {
+          // 初始化布局（计算 9:16 容器尺寸）
+          Layout.init();
+
+          // 从 localStorage 恢复状态
+          State.userPhone = localStorage.getItem('abc_user_phone') || '';
+          State.token = localStorage.getItem('abc_token') || '';
+
+          try {
+            var saved = localStorage.getItem('abc_collected');
+            if (saved) {
+              State.collected = JSON.parse(saved);
+            }
+          } catch (e) {}
+
+          // 检查今日是否已抽卡
+          var lastDraw = localStorage.getItem('lastDrawDate');
+          if (lastDraw === new Date().toDateString()) {
+            State.hasDrawnToday = true;
+          }
+
+          // 更新界面
+          Game.updateSlots();
+          Game.checkComplete();
+
+          // 预加载关键图片
+          var imagesToPreload = [
+            '/images/campaign/design/wabao-card.png',
+            '/images/campaign/design/draw-btn.png',
+            '/images/campaign/design/merge-btn.png',
+            '/images/campaign/design/title.png',
+            '/images/campaign/design/subtitle.png'
+          ];
+          Utils.preloadImages(imagesToPreload, function() {});
+        }
+      };
+
+      // 挂载到全局
+      window.Game = Game;
+
+      // ============================================================
+      // 页面加载完成后初始化
+      // ============================================================
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        Game.init();
+      } else {
+        document.addEventListener('DOMContentLoaded', Game.init);
+      }
+
+    })();
+  </script>
+</body>
+</html>
