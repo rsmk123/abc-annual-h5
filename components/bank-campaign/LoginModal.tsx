@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Image from 'next/image';
-import styles from './campaign.module.css';
+// 移除 Next.js Image 组件，使用原生 img 标签以兼容农行 WebView
+// v21: 移除 styles 导入，输入框改用内联样式
 import { cn } from '@/lib/utils';
 import { sendCode, verifyCode } from '@/lib/api';
 import { ClientPortal } from './ClientPortal';
@@ -143,61 +143,125 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
   };
 
   return (
-    <ClientPortal>
-      <div 
-        className={cn(
-        styles.modalMask,
-        "fixed inset-0 z-[200] flex justify-center items-center",
-        "transition-opacity duration-300",
-        isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-      )}
-      onClick={onClose}
+    <>
+      {/* v20: 移除 ClientPortal，直接渲染，添加半透明背景 */}
+      <div
+        id="login-modal"
+        className="transition-opacity duration-300"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 200,
+          display: 'none', // 默认隐藏，由内联脚本控制
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.75)', // v20: 添加半透明背景
+        }}
     >
       {/* 弹窗容器 */}
-      <div 
+      <div
         className="relative w-[85%] max-w-[320px]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* 切图背景 - 贴边版本 */}
-        <div className="relative w-full aspect-[690/966]">
-          <Image
+        {/* 切图背景 - 贴边版本，使用 padding-top 替代 aspectRatio 兼容旧版 WebView */}
+        <div className="relative w-full" style={{ paddingTop: '140%' /* 966/690 ≈ 140% */ }}>
+          {/* 使用原生 img 标签兼容农行 WebView */}
+          <img
             src="/images/campaign/modals/login-modal.png"
             alt="绑定手机号"
-            fill
-            className="object-contain"
-            priority
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+            }}
           />
           
-          {/* 输入框区域 - 用CSS创建圆角矩形 */}
+          {/* 输入框区域 - v21: 完全内联样式兼容旧版 WebView */}
           <div className="absolute top-[18%] left-[8%] right-[8%] bottom-[28%] flex flex-col justify-center gap-4 px-2">
-            {/* 手机号输入框 */}
-            <div className="bg-gradient-to-r from-[#fff8e7] to-[#ffe4c4] rounded-full px-5 py-4 shadow-inner">
-              <input 
-                type="tel" 
-                className="w-full bg-transparent border-none outline-none text-[16px] text-[#333] placeholder:text-[#999]"
-                placeholder="请输入手机号" 
+            {/* 手机号输入框 - v21: 内联样式 */}
+            <div
+              style={{
+                background: '#fff8e7',
+                borderRadius: '50px',
+                padding: '16px 20px',
+                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <input
+                id="phone-input"
+                type="tel"
+                placeholder="请输入手机号"
                 maxLength={11}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                style={{
+                  width: '100%',
+                  backgroundColor: 'transparent',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '16px',
+                  color: '#333',
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                }}
               />
             </div>
 
-            {/* 验证码输入框 */}
-            <div className="bg-gradient-to-r from-[#fff8e7] to-[#ffe4c4] rounded-full px-5 py-4 shadow-inner flex items-center">
+            {/* 验证码输入框 - v21: 内联样式 */}
+            <div
+              style={{
+                background: '#fff8e7',
+                borderRadius: '50px',
+                padding: '16px 20px',
+                boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
               <input
+                id="code-input"
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                className="flex-1 min-w-0 bg-transparent border-none outline-none text-[16px] text-[#333] placeholder:text-[#999]"
                 placeholder="请输入验证码"
                 maxLength={6}
                 value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  backgroundColor: 'transparent',
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  fontSize: '16px',
+                  color: '#333',
+                  WebkitAppearance: 'none',
+                  appearance: 'none',
+                }}
               />
               <button
-                className="flex-shrink-0 text-[#d92027] text-[13px] font-medium whitespace-nowrap disabled:opacity-50"
+                id="send-code-btn"
                 onClick={handleSendCode}
                 disabled={countdown > 0 || sending}
+                style={{
+                  flexShrink: 0,
+                  color: '#d92027',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                  whiteSpace: 'nowrap',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: (countdown > 0 || sending) ? 0.5 : 1,
+                }}
               >
                 {countdown > 0 ? `${countdown}s` : sending ? '...' : '获取验证码'}
               </button>
@@ -205,7 +269,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
           </div>
 
           {/* 复选框和协议文字 */}
-          <div className="absolute bottom-[26%] left-[8%] right-[8%] h-[6%] flex items-center justify-center gap-2">
+          <div className="absolute bottom-[26%] left-[8%] right-[8%] h-[6%] flex items-center justify-center">
             {/* 勾选框 */}
             <div 
               className={cn(
@@ -221,13 +285,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
               )}
             </div>
             {/* 协议文字 */}
-            <span className="text-white text-[12px] cursor-pointer" onClick={() => setShowRules(true)}>
+            <span className="text-white text-[12px] cursor-pointer ml-2" onClick={() => setShowRules(true)}>
               我已阅读并知悉<span className="text-[#1890ff] underline">本活动详情</span>
             </span>
           </div>
 
             {/* 登录按钮点击区域 - 透明热区 */}
-            <div 
+            <div
+              id="login-btn"
               className={cn(
                 "absolute bottom-[12%] left-[10%] right-[10%] h-[12%] cursor-pointer z-10",
                 loggingIn ? "pointer-events-none" : ""
@@ -241,7 +306,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
         </div>
 
         {/* 关闭按钮 */}
-        <button 
+        <button
+          id="login-close"
           onClick={onClose}
           className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white/90 shadow-lg flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all z-10"
         >
@@ -260,8 +326,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
       {/* Loading 浮层 */}
       {loggingIn && (
         <div className="fixed inset-0 z-[500] flex items-center justify-center">
-          <div className="bg-black/80 text-white px-6 py-4 rounded-lg flex items-center gap-3 shadow-xl">
-            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+          <div className="bg-black/80 text-white px-6 py-4 rounded-lg flex items-center shadow-xl">
+            <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
@@ -279,6 +345,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, testMode = false
         </div>
       )}
     </div>
-    </ClientPortal>
+    </>
   );
 };

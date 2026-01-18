@@ -47,5 +47,13 @@
     "playwright": "^1.57.0",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not op_mini all",
+    "Android >= 4.4",
+    "Chrome >= 60",
+    "Safari >= 10"
+  ]
 }

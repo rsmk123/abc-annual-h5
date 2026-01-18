@@ -11,6 +11,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,           // 跳过类型检查（已删除 app/api）
   },
+  // 编译选项：增强浏览器兼容性
+  compiler: {
+    // 移除 console.log（生产环境）
+    removeConsole: isDev ? false : {
+      exclude: ['error', 'warn'],
+    },
+  },
+  // 确保 CSS 正确加载（兼容性）
+  experimental: {
+    optimizeCss: false, // 禁用 CSS 优化，避免兼容性问题
+  },
   // 开发环境 API 代理，绕过 CORS 问题
   async rewrites() {
     if (isDev) {

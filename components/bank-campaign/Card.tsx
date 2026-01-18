@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+// 移除 Next.js Image 组件，使用原生 img 标签以兼容农行 WebView
 import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { CardChar, getWabaoImage } from '@/lib/cardConfig';
@@ -58,15 +58,24 @@ export const Card: React.FC<CardProps> = ({
           "bg-gradient-to-b from-[#fff5e6] to-[#ffe4c4]",
           "border-4 border-[#f0c676]",
           "shadow-[0_10px_40px_rgba(0,0,0,0.3)]"
-        )}>
+        )}
+        style={{
+          // v18: 只有显示结果时才在上层，否则隐藏在背面下方
+          zIndex: showResult ? 2 : 0,
+        }}
+        >
           {showResult && resultChar && (
             <div className="relative w-[90%] h-[90%]">
-              <Image
+              {/* 使用原生 img 标签兼容农行 WebView */}
+              <img
                 src={getWabaoImage(resultChar)}
                 alt={resultChar}
-                fill
-                className="object-contain"
-                priority
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
               />
             </div>
           )}
@@ -78,14 +87,22 @@ export const Card: React.FC<CardProps> = ({
           styles.cardBack,
           "absolute w-full h-full overflow-hidden",
           "flex flex-col justify-center items-center"
-        )}>
-          {/* 使用设计稿的蛙宝卡片图片 */}
-          <Image
+        )}
+        style={{
+          // v18: 背面始终在 z-index 1，正面根据状态切换 0/2
+          zIndex: 1,
+        }}
+        >
+          {/* 使用原生 img 标签兼容农行 WebView */}
+          <img
             src="/images/campaign/design/wabao-card.png"
             alt="点击抽取福卡"
-            fill
-            className="object-contain"
-            priority
+            style={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+            }}
           />
         </div>
       </div>

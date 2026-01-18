@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+// 移除 Next.js Image 组件，使用原生 img 标签以兼容农行 WebView
 import styles from './campaign.module.css';
 import { cn } from '@/lib/utils';
 import { IMAGES } from '@/lib/cardConfig';
@@ -33,6 +33,7 @@ export const DrawButton: React.FC<DrawButtonProps> = ({
     return (
       <div className="w-full flex flex-col items-center">
         <button
+          id="merge-btn"
           onClick={onMergeClick}
           className={cn(
             "transition-all duration-200",
@@ -65,6 +66,7 @@ export const DrawButton: React.FC<DrawButtonProps> = ({
     <div className="w-full flex flex-col items-center">
       {/* 主抽卡按钮 - 使用设计稿图片 */}
       <button
+        id="draw-btn"
         onClick={handleClick}
         disabled={isDisabled}
         className={cn(
@@ -101,6 +103,7 @@ interface RulesButtonProps {
 export const RulesButton: React.FC<RulesButtonProps> = ({ onClick }) => {
   return (
     <button
+      id="rules-btn"
       onClick={onClick}
       className="transition-all active:scale-[0.98] hover:brightness-105"
     >

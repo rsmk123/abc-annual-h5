@@ -47,6 +47,9 @@ export default function BankCampaignPage() {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // 防止触摸和点击双重触发
+  const touchHandledRef = useRef(false);
+
   // 今日是否已抽卡
   const [hasDrawnToday, setHasDrawnToday] = useState(false);
 
@@ -94,7 +97,22 @@ export default function BankCampaignPage() {
   const [testMode, setTestMode] = useState(false);
 
   // 线上默认隐藏调试面板
-  const SHOW_DEBUG_PANEL = false;
+  const SHOW_DEBUG_PANEL = true;
+
+  // ========================================
+  // 设置页面标题（确保不被覆盖）
+  // ========================================
+  useEffect(() => {
+    // 立即设置
+    document.title = '哇宝年货节 天天集福卡';
+    // 定期检查并恢复（防止被其他代码覆盖）
+    const interval = setInterval(() => {
+      if (document.title !== '哇宝年货节 天天集福卡') {
+        document.title = '哇宝年货节 天天集福卡';
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, []);
 
   // ========================================
   // 初始化：从 localStorage 恢复状态
@@ -704,47 +722,1138 @@ export default function BankCampaignPage() {
   };
 
   /**
-   * 开始游戏
+   * 开始游戏 - v12 方案：纯 DOM 操作，不依赖任何 React 状态
+   *
+   * v11 问题：即使删除欢迎页，游戏页也不显示
+   * 原因：游戏页的显示依赖 React 状态 (gamePageReady, showWelcome)
+   *       如果 React 不重渲染，条件渲染就不会更新
+   *
+   * v12 解决方案：
+   * - 游戏页始终渲染（不用条件渲染）
+   * - 用 CSS z-index 控制层级
+   * - 点击后直接操作 DOM：隐藏欢迎页 + 显示游戏页
    */
   const handleStartGame = () => {
-    playClickSound();
-    setIsTransitioning(true);
-    setGamePageReady(true);
-    if (audioRef.current) {
-      audioRef.current.play().then(() => {
-        setIsMusicPlaying(true);
-      }).catch(() => {});
+    // 调试日志函数 - 直接写入页面
+    const debugLog = (msg: string) => {
+      const debugEl = document.getElementById('debug-log');
+      if (debugEl) {
+        const time = new Date().toLocaleTimeString();
+        debugEl.innerHTML += `<div>[${time}] ${msg}</div>`;
+      }
+    };
+
+    debugLog('handleStartGame 被调用');
+
+    // 防止重复触发
+    if (isTransitioning) {
+      debugLog('已在过渡中，跳过');
+      return;
     }
-    setTimeout(() => {
-      setShowWelcome(false);
-    }, 600);
+    setIsTransitioning(true);
+    debugLog('设置 isTransitioning = true');
+
+    // ========== 1. 隐藏欢迎页（直接 DOM 操作）==========
+    const welcomeEl = document.getElementById('welcome-page');
+    debugLog(`welcomeEl 存在: ${!!welcomeEl}`);
+    if (welcomeEl) {
+      welcomeEl.style.display = 'none';
+      welcomeEl.style.visibility = 'hidden';
+      welcomeEl.style.opacity = '0';
+      welcomeEl.style.pointerEvents = 'none';
+      welcomeEl.style.zIndex = '-1';
+      debugLog('欢迎页已隐藏 (DOM)');
+    }
+
+    // ========== 2. 显示游戏页背景（直接 DOM 操作）==========
+    const gameBgEl = document.getElementById('game-background');
+    debugLog(`gameBgEl 存在: ${!!gameBgEl}`);
+    if (gameBgEl) {
+      gameBgEl.style.display = 'block';
+      gameBgEl.style.visibility = 'visible';
+      gameBgEl.style.opacity = '1';
+      debugLog('游戏背景已显示 (DOM)');
+    }
+
+    // ========== 3. 显示游戏内容（直接 DOM 操作）==========
+    const gameContentEl = document.getElementById('game-content');
+    debugLog(`gameContentEl 存在: ${!!gameContentEl}`);
+    if (gameContentEl) {
+      gameContentEl.style.opacity = '1';
+      gameContentEl.style.transform = 'scale(1)';
+      gameContentEl.style.visibility = 'visible';
+      debugLog('游戏内容已显示 (DOM)');
+    }
+
+    // ========== 4. React 状态更新（备用）==========
+    setGamePageReady(true);
+    setShowWelcome(false);
+    debugLog('React 状态已更新');
+
+    // ========== 5. 可选：音效和音乐 ==========
+    try {
+      playClickSound();
+      debugLog('音效播放成功');
+    } catch (e) {
+      debugLog(`音效错误: ${e}`);
+    }
+
+    try {
+      if (audioRef.current) {
+        audioRef.current.play()
+          .then(() => {
+            setIsMusicPlaying(true);
+            debugLog('音乐播放成功');
+          })
+          .catch((e) => {
+            debugLog(`音乐错误: ${e}`);
+          });
+      }
+    } catch (e) {
+      debugLog(`音乐异常: ${e}`);
+    }
+
+    debugLog('handleStartGame 执行完毕');
   };
+
+  // 使用 ref 引用欢迎页
+  const welcomeRef = useRef<HTMLDivElement>(null);
+
+  // ========================================
+  // v8 方案：将 handleStartGame 挂载到 window 上
+  // 这样可以使用内联 onclick 属性，绕过所有 React 事件系统
+  // ========================================
+  useEffect(() => {
+    // 将函数挂载到 window 上，供内联 onclick 调用
+    (window as Window & { __startGame?: () => void }).__startGame = () => {
+      if (isTransitioning) return;
+      handleStartGame();
+    };
+
+    return () => {
+      // 清理
+      delete (window as Window & { __startGame?: () => void }).__startGame;
+    };
+  }, [isTransitioning]);
+
+  // ========================================
+  // v13：使用完全原生的事件绑定，记录每个事件
+  // ========================================
+  useEffect(() => {
+    // 调试日志函数
+    const debugLog = (msg: string) => {
+      const debugEl = document.getElementById('debug-log');
+      if (debugEl) {
+        const time = new Date().toLocaleTimeString();
+        const div = document.createElement('div');
+        div.textContent = `[${time}] ${msg}`;
+        debugEl.appendChild(div);
+        // 滚动到底部
+        debugEl.scrollTop = debugEl.scrollHeight;
+      }
+    };
+
+    debugLog('useEffect 开始绑定事件');
+
+    const welcomeEl = document.getElementById('welcome-page');
+    debugLog(`welcome-page 元素: ${welcomeEl ? '找到' : '未找到'}`);
+
+    if (!welcomeEl) {
+      debugLog('欢迎页元素不存在，跳过绑定');
+      return;
+    }
+
+    // 核心点击处理函数
+    const handleClick = (e: Event) => {
+      debugLog(`事件触发: ${e.type}`);
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 直接操作 DOM 隐藏欢迎页
+      debugLog('开始隐藏欢迎页...');
+      welcomeEl.style.display = 'none';
+      welcomeEl.style.visibility = 'hidden';
+      debugLog('欢迎页 display=none 设置完成');
+
+      // 显示游戏背景
+      const gameBgEl = document.getElementById('game-background');
+      if (gameBgEl) {
+        gameBgEl.style.display = 'block';
+        gameBgEl.style.visibility = 'visible';
+        gameBgEl.style.opacity = '1';
+        debugLog('游戏背景已显示');
+      } else {
+        debugLog('游戏背景元素未找到!');
+      }
+
+      // 显示游戏内容
+      const gameContentEl = document.getElementById('game-content');
+      if (gameContentEl) {
+        gameContentEl.style.opacity = '1';
+        gameContentEl.style.transform = 'scale(1)';
+        gameContentEl.style.visibility = 'visible';
+        debugLog('游戏内容已显示');
+      } else {
+        debugLog('游戏内容元素未找到!');
+      }
+
+      debugLog('DOM 操作完成');
+    };
+
+    // 绑定多种事件
+    welcomeEl.addEventListener('click', handleClick, { capture: true, passive: false });
+    welcomeEl.addEventListener('touchstart', handleClick, { capture: true, passive: false });
+    welcomeEl.addEventListener('touchend', handleClick, { capture: true, passive: false });
+    welcomeEl.addEventListener('mousedown', handleClick, { capture: true, passive: false });
+    welcomeEl.addEventListener('mouseup', handleClick, { capture: true, passive: false });
+    welcomeEl.addEventListener('pointerdown', handleClick, { capture: true, passive: false });
+    welcomeEl.addEventListener('pointerup', handleClick, { capture: true, passive: false });
+
+    debugLog('已绑定 7 种事件: click, touchstart, touchend, mousedown, mouseup, pointerdown, pointerup');
+
+    // 同时在 document 上监听（冒泡）
+    const handleDocClick = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (welcomeEl.contains(target) || target === welcomeEl) {
+        debugLog(`document ${e.type} 捕获到欢迎页点击`);
+        handleClick(e);
+      }
+    };
+
+    document.addEventListener('click', handleDocClick, true);
+    document.addEventListener('touchstart', handleDocClick, true);
+    debugLog('已在 document 上绑定 click 和 touchstart');
+
+    return () => {
+      welcomeEl.removeEventListener('click', handleClick);
+      welcomeEl.removeEventListener('touchstart', handleClick);
+      welcomeEl.removeEventListener('touchend', handleClick);
+      welcomeEl.removeEventListener('mousedown', handleClick);
+      welcomeEl.removeEventListener('mouseup', handleClick);
+      welcomeEl.removeEventListener('pointerdown', handleClick);
+      welcomeEl.removeEventListener('pointerup', handleClick);
+      document.removeEventListener('click', handleDocClick, true);
+      document.removeEventListener('touchstart', handleDocClick, true);
+    };
+  }, []);
 
   // ========================================
   // 渲染 UI
   // ========================================
   return (
-    <div className="w-full h-screen bg-[#1a0808] overflow-hidden font-sans">
+    <div
+      className="w-full h-screen overflow-hidden font-sans"
+      style={{
+        width: '100%',
+        height: '100vh',
+        minHeight: '100vh',
+        // 兼容农行 WebView - 使用内联样式确保背景色正确显示
+        backgroundColor: showWelcome ? '#b81c22' : '#1a0808', // 欢迎页时使用红色，游戏页使用深色
+        position: 'relative',
+        // 确保在农行 WebView 中也能正确显示
+        display: 'block',
+        visibility: 'visible',
+        opacity: 1,
+        overflow: 'hidden',
+      }}
+    >
+      {/* ==================== v21: 可关闭的调试面板 - 标题栏固定 ==================== */}
+      <div
+        id="debug-log"
+        style={{
+          display: 'block',
+          position: 'fixed',
+          bottom: '0',
+          left: '0',
+          right: '0',
+          height: '120px',
+          backgroundColor: 'rgba(0,0,0,0.9)',
+          color: '#0f0',
+          fontSize: '11px',
+          fontFamily: 'monospace',
+          zIndex: 99999,
+          borderTop: '2px solid #f00',
+        }}
+      >
+        {/* 固定标题栏 */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '6px 8px',
+          backgroundColor: 'rgba(0,0,0,1)',
+          borderBottom: '1px solid #333',
+        }}>
+          <span style={{ color: '#ff0' }}>v22 调试 | UA: <span id="debug-ua"></span></span>
+          {/* v21: 使用 dangerouslySetInnerHTML 添加原生 onclick */}
+          <span
+            dangerouslySetInnerHTML={{
+              __html: `<button id="debug-close" onclick="document.getElementById('debug-log').style.display='none'" style="color:#fff;background:#f00;border:none;padding:4px 12px;border-radius:4px;font-size:12px;cursor:pointer;font-weight:bold;">关闭</button>`
+            }}
+          />
+        </div>
+        {/* 可滚动日志区域 */}
+        <div
+          id="debug-log-content"
+          style={{
+            height: 'calc(100% - 30px)',
+            overflow: 'auto',
+            padding: '4px 8px',
+          }}
+        />
+      </div>
+
+      {/* ==================== v20: 完整内联脚本，支持所有交互逻辑 ==================== */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+(function() {
+  // ========== v20: 防止重复初始化 ==========
+  var initialized = false;
+
+  // ========== v22: 日志写入到 debug-log-content，新日志在顶部 ==========
+  var log = function(msg, color) {
+    var el = document.getElementById('debug-log-content');
+    var container = document.getElementById('debug-log');
+    if (el && container && container.style.display !== 'none') {
+      var div = document.createElement('div');
+      div.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      if (color) div.style.color = color;
+      // v22: 插入到最前面而不是最后面
+      el.insertBefore(div, el.firstChild);
+      // 限制日志数量，防止内存溢出（删除最旧的，即最后面的）
+      while (el.children.length > 50) {
+        el.removeChild(el.lastChild);
+      }
+    }
+    console.log('[v22] ' + msg);
+  };
+
+  // 捕获全局错误
+  window.onerror = function(msg, url, line, col, error) {
+    log('JS错误: ' + msg + ' @' + line + ':' + col, '#f00');
+    return false;
+  };
+
+  // 显示 UA
+  try {
+    var uaEl = document.getElementById('debug-ua');
+    if (uaEl) {
+      var ua = navigator.userAgent;
+      // 简化UA显示
+      if (ua.indexOf('Honor') > -1) uaEl.textContent = 'Honor';
+      else if (ua.indexOf('HUAWEI') > -1) uaEl.textContent = 'HUAWEI';
+      else if (ua.indexOf('iPhone') > -1) uaEl.textContent = 'iPhone';
+      else if (ua.indexOf('Android') > -1) uaEl.textContent = 'Android';
+      else uaEl.textContent = ua.substring(0, 30);
+    }
+  } catch(e) {}
+
+  // v20: 检查并列出所有弹窗元素
+  var checkModals = function() {
+    var modals = ['login-modal', 'rules-modal', 'result-modal', 'final-modal'];
+    modals.forEach(function(id) {
+      var el = document.getElementById(id);
+      log('弹窗检查 ' + id + ': ' + (el ? '存在' : '不存在'), el ? '#0f0' : '#f00');
+    });
+  };
+
+  var show = function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.style.display = 'flex';
+      el.style.opacity = '1';
+      el.style.pointerEvents = 'auto';
+      el.style.visibility = 'visible';
+      log('显示: ' + id + ' (display=' + el.style.display + ')', '#0f0');
+    } else {
+      log('找不到元素: ' + id, '#f00');
+      // v20: 如果找不到，重新检查所有弹窗
+      checkModals();
+    }
+  };
+
+  var hide = function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.style.display = 'none';
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      log('隐藏: ' + id, '#ff0');
+    } else {
+      log('找不到元素: ' + id, '#f00');
+    }
+  };
+
+  log('v19 脚本启动', '#0ff');
+
+  // ========== 状态管理 ==========
+  var State = {
+    userPhone: '',
+    collected: [false, false, false, false, false],
+    hasDrawnToday: false,
+    currentResult: null,
+    isDrawing: false,
+    countdown: 0,
+    countdownTimer: null,
+  };
+
+  // 卡片配置
+  var CARDS = ['马', '上', '发', '财', '哇'];
+  var CARD_FOLDERS = { '马': 'ma', '上': 'shang', '发': 'fa', '财': 'cai', '哇': 'wa' };
+  var CARD_IMAGES = {
+    'ma': '/images/campaign/modals/result-ma-new.png',
+    'shang': '/images/campaign/modals/result-shang-new.png',
+    'fa': '/images/campaign/modals/result-fa-new.png',
+    'cai': '/images/campaign/modals/result-cai-new.png',
+    'wa': '/images/campaign/modals/result-wa-new.png',
+  };
+  var SLOT_COLLECTED = [
+    '/images/campaign/slots-new/ma.png',
+    '/images/campaign/slots-new/shang.png',
+    '/images/campaign/slots-new/fa.png',
+    '/images/campaign/slots-new/cai.png',
+    '/images/campaign/slots-new/wa.png',
+  ];
+  var SLOT_SHADOW = '/images/campaign/slots-new/shadow.png';
+
+  // ========== Toast 提示 ==========
+  var Toast = {
+    show: function(msg) {
+      var container = document.getElementById('toast-container');
+      var msgEl = document.getElementById('toast-msg');
+      if (container && msgEl) {
+        msgEl.textContent = msg;
+        container.style.display = 'flex';
+        setTimeout(function() {
+          container.style.display = 'none';
+        }, 2500);
+      }
+      log('Toast: ' + msg);
+    }
+  };
+
+  // ========== 弹窗控制 ==========
+  var Modal = {
+    showLogin: function() { show('login-modal'); },
+    hideLogin: function() { hide('login-modal'); },
+
+    showResult: function(cardIndex) {
+      State.currentResult = cardIndex;
+      var folder = Object.values(CARD_FOLDERS)[cardIndex];
+      var img = document.getElementById('result-card-img');
+      if (img) {
+        img.src = CARD_IMAGES[folder];
+      }
+      show('result-modal');
+    },
+    hideResult: function() {
+      hide('result-modal');
+      // 检查是否集齐
+      if (State.collected.every(function(c) { return c; })) {
+        // 延迟显示合成按钮
+        Game.updateButtons();
+      }
+    },
+
+    showRules: function() { show('rules-modal'); },
+    hideRules: function() { hide('rules-modal'); },
+
+    showFinal: function() { show('final-modal'); },
+    hideFinal: function() { hide('final-modal'); },
+  };
+
+  // ========== API 调用 ==========
+  var API = {
+    baseUrl: 'https://1331245644-lnsmyztba1.ap-guangzhou.tencentscf.com',
+
+    request: function(endpoint, method, data, callback) {
+      log('API 请求: ' + method + ' ' + endpoint);
+      var xhr = new XMLHttpRequest();
+      xhr.open(method, API.baseUrl + endpoint, true);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      var token = localStorage.getItem('abc_token');
+      if (token) {
+        xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+      }
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+          log('API 响应: ' + xhr.status);
+          try {
+            var resp = JSON.parse(xhr.responseText);
+            callback(resp);
+          } catch(e) {
+            log('API 解析错误: ' + e.message);
+            callback({ success: false, error: '网络错误' });
+          }
+        }
+      };
+      xhr.onerror = function() {
+        log('API 网络错误');
+        callback({ success: false, error: '网络错误' });
+      };
+      xhr.send(data ? JSON.stringify(data) : null);
+    },
+
+    sendCode: function(phone, callback) {
+      var deviceId = localStorage.getItem('deviceId') || 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('deviceId', deviceId);
+      API.request('/api/auth/send-code', 'POST', { phone: phone, deviceId: deviceId }, callback);
+    },
+
+    verifyCode: function(phone, code, callback) {
+      var deviceId = localStorage.getItem('deviceId') || 'unknown';
+      API.request('/api/auth/verify-code', 'POST', { phone: phone, code: code, deviceId: deviceId }, function(resp) {
+        if (resp.success && resp.token) {
+          localStorage.setItem('abc_token', resp.token);
+          localStorage.setItem('abc_user_phone', phone);
+          State.userPhone = phone;
+        }
+        callback(resp);
+      });
+    },
+
+    drawCard: function(callback) {
+      var deviceId = localStorage.getItem('deviceId') || 'unknown';
+      API.request('/api/card/draw', 'POST', { deviceId: deviceId }, callback);
+    },
+
+    getUserStatus: function(callback) {
+      API.request('/api/user/status', 'GET', null, callback);
+    }
+  };
+
+  // ========== 游戏逻辑 ==========
+  var Game = {
+    drawCard: function() {
+      log('drawCard 被调用');
+
+      // 防止重复点击
+      if (State.isDrawing) {
+        log('正在抽卡中，忽略');
+        return;
+      }
+
+      // 检查登录
+      if (!State.userPhone) {
+        log('未登录，显示登录弹窗');
+        Modal.showLogin();
+        return;
+      }
+
+      // 检查今日是否已抽
+      if (State.hasDrawnToday) {
+        Toast.show('每天可抽卡一次，请明天再来哦');
+        return;
+      }
+
+      // 检查是否已集齐
+      if (State.collected.every(function(c) { return c; })) {
+        Modal.showFinal();
+        return;
+      }
+
+      State.isDrawing = true;
+      log('开始抽卡...');
+
+      // 调用 API
+      API.drawCard(function(result) {
+        log('抽卡结果: ' + JSON.stringify(result));
+        State.isDrawing = false;
+
+        if (result.success && result.data) {
+          State.hasDrawnToday = true;
+          localStorage.setItem('lastDrawDate', new Date().toDateString());
+
+          // 更新卡片收集状态
+          if (result.data.cards) {
+            State.collected = result.data.cards;
+            localStorage.setItem('abc_collected', JSON.stringify(result.data.cards));
+            Game.updateSlots();
+          }
+
+          // 显示结果
+          Modal.showResult(result.data.cardIndex);
+        } else {
+          var errorMsg = result.error || '抽卡失败';
+          if (errorMsg.indexOf('今天已经抽过') >= 0 || errorMsg.indexOf('明天再来') >= 0) {
+            State.hasDrawnToday = true;
+            localStorage.setItem('lastDrawDate', new Date().toDateString());
+            Toast.show('每天可抽卡一次，请明天再来哦');
+          } else {
+            Toast.show(errorMsg);
+          }
+        }
+      });
+    },
+
+    updateSlots: function() {
+      log('更新卡槽显示');
+      for (var i = 0; i < 5; i++) {
+        var slotImg = document.getElementById('slot-img-' + i);
+        if (slotImg) {
+          if (State.collected[i]) {
+            slotImg.src = SLOT_COLLECTED[i];
+            slotImg.style.opacity = '1';
+          } else {
+            slotImg.src = SLOT_SHADOW;
+            slotImg.style.opacity = '0.5';
+          }
+        }
+      }
+      Game.updateButtons();
+    },
+
+    updateButtons: function() {
+      var allCollected = State.collected.every(function(c) { return c; });
+      var drawBtn = document.getElementById('draw-btn');
+      var mergeBtn = document.getElementById('merge-btn');
+
+      // 这里的按钮显示隐藏逻辑需要配合 React 的条件渲染
+      // 由于按钮是 React 控制的，这里只更新状态标记
+      log('所有卡片已集齐: ' + allCollected);
+    },
+
+    // 登录相关
+    sendCode: function() {
+      var phoneInput = document.getElementById('phone-input');
+      if (!phoneInput) return;
+
+      var phone = phoneInput.value;
+      if (phone.length !== 11) {
+        Toast.show('请输入正确的11位手机号');
+        return;
+      }
+
+      if (State.countdown > 0) return;
+
+      log('发送验证码到: ' + phone);
+      State.countdown = 60;
+      Game.updateCountdown();
+
+      API.sendCode(phone, function(result) {
+        if (!result.success) {
+          Toast.show(result.error || '发送失败');
+        } else {
+          log('验证码发送成功');
+        }
+      });
+    },
+
+    updateCountdown: function() {
+      var sendBtn = document.getElementById('send-code-btn');
+      if (sendBtn) {
+        if (State.countdown > 0) {
+          sendBtn.textContent = State.countdown + 's';
+          sendBtn.disabled = true;
+        } else {
+          sendBtn.textContent = '获取验证码';
+          sendBtn.disabled = false;
+        }
+      }
+
+      if (State.countdown > 0) {
+        State.countdown--;
+        State.countdownTimer = setTimeout(Game.updateCountdown, 1000);
+      }
+    },
+
+    login: function() {
+      var phoneInput = document.getElementById('phone-input');
+      var codeInput = document.getElementById('code-input');
+      if (!phoneInput || !codeInput) return;
+
+      var phone = phoneInput.value;
+      var code = codeInput.value;
+
+      if (phone.length !== 11) {
+        Toast.show('请输入正确的11位手机号');
+        return;
+      }
+
+      if (code.length !== 6) {
+        Toast.show('请输入6位验证码');
+        return;
+      }
+
+      log('开始登录验证...');
+      API.verifyCode(phone, code, function(result) {
+        if (result.success) {
+          log('登录成功');
+          State.userPhone = phone;
+          Modal.hideLogin();
+
+          // 加载用户状态
+          API.getUserStatus(function(status) {
+            if (status.success && status.data) {
+              State.collected = status.data.cards || [false,false,false,false,false];
+              localStorage.setItem('abc_collected', JSON.stringify(State.collected));
+
+              if (status.data.lastDrawAt) {
+                var lastDraw = new Date(status.data.lastDrawAt);
+                var today = new Date();
+                if (lastDraw.toDateString() === today.toDateString()) {
+                  State.hasDrawnToday = true;
+                }
+              }
+              Game.updateSlots();
+            }
+          });
+        } else {
+          Toast.show(result.error || '验证失败，请重试');
+        }
+      });
+    },
+
+    toggleMusic: function() {
+      var audio = document.getElementById('bgm-audio');
+      var btnImg = document.getElementById('music-btn-img');
+      if (audio && btnImg) {
+        if (audio.paused) {
+          audio.play().catch(function() {});
+          btnImg.src = '/images/campaign/design/播放按钮.png';
+        } else {
+          audio.pause();
+          btnImg.src = '/images/campaign/design/暂停按钮.png';
+        }
+      }
+    }
+  };
+
+  // ========== 事件绑定 ==========
+  var bindEvents = function() {
+    log('开始绑定事件...');
+
+    // 欢迎页点击
+    var welcomeEl = document.getElementById('welcome-page');
+    if (welcomeEl) {
+      var handleWelcomeClick = function(e) {
+        log('欢迎页点击');
+        welcomeEl.style.display = 'none';
+
+        var bg = document.getElementById('game-background');
+        if (bg) {
+          bg.style.display = 'block';
+          bg.style.visibility = 'visible';
+          bg.style.opacity = '1';
+        }
+
+        var content = document.getElementById('game-content');
+        if (content) {
+          content.style.opacity = '1';
+          content.style.visibility = 'visible';
+          content.style.transform = 'scale(1)';
+        }
+
+        // 播放音乐
+        var audio = document.getElementById('bgm-audio');
+        if (audio) {
+          audio.play().catch(function() {});
+          var btnImg = document.getElementById('music-btn-img');
+          if (btnImg) btnImg.src = '/images/campaign/design/播放按钮.png';
+        }
+      };
+      welcomeEl.onclick = handleWelcomeClick;
+      welcomeEl.ontouchstart = handleWelcomeClick;
+      log('欢迎页事件已绑定');
+    }
+
+    // 抽卡按钮
+    var drawBtn = document.getElementById('draw-btn');
+    if (drawBtn) {
+      drawBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Game.drawCard();
+      };
+      log('抽卡按钮已绑定');
+    }
+
+    // 合成按钮
+    var mergeBtn = document.getElementById('merge-btn');
+    if (mergeBtn) {
+      mergeBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Modal.showFinal();
+      };
+      log('合成按钮已绑定');
+    }
+
+    // 规则按钮
+    var rulesBtn = document.getElementById('rules-btn');
+    if (rulesBtn) {
+      rulesBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Modal.showRules();
+      };
+      log('规则按钮已绑定');
+    }
+
+    // 规则弹窗关闭
+    var rulesClose = document.getElementById('rules-close');
+    if (rulesClose) {
+      rulesClose.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Modal.hideRules();
+      };
+    }
+    var rulesModal = document.getElementById('rules-modal');
+    if (rulesModal) {
+      rulesModal.onclick = function(e) {
+        if (e.target === rulesModal) {
+          Modal.hideRules();
+        }
+      };
+    }
+
+    // 结果弹窗关闭
+    var resultClose = document.getElementById('result-close');
+    if (resultClose) {
+      resultClose.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Modal.hideResult();
+      };
+    }
+
+    // 登录弹窗
+    var loginClose = document.getElementById('login-close');
+    if (loginClose) {
+      loginClose.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Modal.hideLogin();
+      };
+    }
+
+    // 发送验证码按钮
+    var sendCodeBtn = document.getElementById('send-code-btn');
+    if (sendCodeBtn) {
+      sendCodeBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Game.sendCode();
+      };
+    }
+
+    // 登录按钮
+    var loginBtn = document.getElementById('login-btn');
+    if (loginBtn) {
+      loginBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Game.login();
+      };
+    }
+
+    // 音乐按钮
+    var musicBtn = document.getElementById('music-btn');
+    if (musicBtn) {
+      musicBtn.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Game.toggleMusic();
+      };
+    }
+
+    // 最终弹窗关闭
+    var finalClose = document.getElementById('final-close');
+    if (finalClose) {
+      finalClose.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        Modal.hideFinal();
+      };
+    }
+
+    // 卡槽点击
+    for (var i = 0; i < 5; i++) {
+      (function(idx) {
+        var slot = document.getElementById('slot-' + idx);
+        if (slot) {
+          slot.onclick = function(e) {
+            if (State.collected[idx]) {
+              Modal.showResult(idx);
+            }
+          };
+        }
+      })(i);
+    }
+
+    log('所有事件绑定完成');
+  };
+
+  // ========== 初始化 ==========
+  var init = function() {
+    // v17: 防止重复执行
+    if (initialized) {
+      log('init 已执行过，跳过');
+      return;
+    }
+    initialized = true;
+
+    log('init 开始');
+
+    // 从 localStorage 恢复状态
+    State.userPhone = localStorage.getItem('abc_user_phone') || '';
+    try {
+      State.collected = JSON.parse(localStorage.getItem('abc_collected') || '[false,false,false,false,false]');
+    } catch(e) {
+      State.collected = [false, false, false, false, false];
+    }
+
+    // 检查今日是否已抽卡
+    var lastDraw = localStorage.getItem('lastDrawDate');
+    if (lastDraw === new Date().toDateString()) {
+      State.hasDrawnToday = true;
+    }
+
+    log('状态恢复: phone=' + (State.userPhone ? '已登录' : '未登录') + ', hasDrawnToday=' + State.hasDrawnToday);
+
+    // v20: 初始化时检查所有弹窗元素
+    checkModals();
+
+    // 更新卡槽显示
+    Game.updateSlots();
+
+    // 绑定事件
+    bindEvents();
+
+    log('init 完成', '#0f0');
+  };
+
+  // v20: 使用事件委托，解决 React Hydration 后事件丢失问题
+  // 记录所有点击，便于调试
+  var clickCount = 0;
+
+  // 同时监听 click 和 touchend（某些 WebView 只支持 touch 事件）
+  var handleInteraction = function(e) {
+    clickCount++;
+    var x = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : 0) || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0);
+    var y = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : 0) || (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0);
+
+    var target = e.target;
+    var targetInfo = target.tagName + (target.id ? '#' + target.id : '') + (target.className ? '.' + String(target.className).substring(0,20) : '');
+    log('#' + clickCount + ' ' + e.type + ' (' + Math.round(x) + ',' + Math.round(y) + ') ' + targetInfo, '#0ff');
+
+    // 向上查找最近的带 ID 的元素
+    while (target && target !== document) {
+      var id = target.id;
+      if (id) {
+        log('  -> 找到ID: ' + id, '#aaa');
+
+        // v20: 调试面板关闭按钮
+        if (id === 'debug-close') {
+          e.preventDefault();
+          e.stopPropagation();
+          var debugLog = document.getElementById('debug-log');
+          if (debugLog) debugLog.style.display = 'none';
+          return;
+        }
+        // 规则按钮
+        if (id === 'rules-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 显示规则', '#0f0');
+          Modal.showRules();
+          return;
+        }
+        // 规则弹窗关闭
+        if (id === 'rules-close') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 关闭规则', '#0f0');
+          Modal.hideRules();
+          return;
+        }
+        // 规则弹窗背景点击关闭
+        if (id === 'rules-modal' && target === e.target) {
+          log('  >> 触发: 背景关闭规则', '#0f0');
+          Modal.hideRules();
+          return;
+        }
+        // 抽卡按钮
+        if (id === 'draw-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 抽卡', '#0f0');
+          Game.drawCard();
+          return;
+        }
+        // 合成按钮
+        if (id === 'merge-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 合成', '#0f0');
+          Modal.showFinal();
+          return;
+        }
+        // 登录弹窗关闭
+        if (id === 'login-close') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 关闭登录', '#0f0');
+          Modal.hideLogin();
+          return;
+        }
+        // 发送验证码
+        if (id === 'send-code-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 发送验证码', '#0f0');
+          Game.sendCode();
+          return;
+        }
+        // 登录按钮
+        if (id === 'login-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 登录', '#0f0');
+          Game.login();
+          return;
+        }
+        // 结果弹窗关闭
+        if (id === 'result-close') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 关闭结果', '#0f0');
+          Modal.hideResult();
+          return;
+        }
+        // 最终弹窗关闭
+        if (id === 'final-close') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 关闭最终', '#0f0');
+          Modal.hideFinal();
+          return;
+        }
+        // 音乐按钮
+        if (id === 'music-btn') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 音乐', '#0f0');
+          Game.toggleMusic();
+          return;
+        }
+        // 欢迎页点击
+        if (id === 'welcome-page') {
+          e.preventDefault();
+          e.stopPropagation();
+          log('  >> 触发: 进入游戏', '#0f0');
+          // 隐藏欢迎页
+          var welcomeEl = document.getElementById('welcome-page');
+          if (welcomeEl) {
+            welcomeEl.style.display = 'none';
+          }
+          // 显示游戏背景
+          var bg = document.getElementById('game-background');
+          if (bg) {
+            bg.style.display = 'block';
+            bg.style.visibility = 'visible';
+            bg.style.opacity = '1';
+          }
+          // 显示游戏内容
+          var content = document.getElementById('game-content');
+          if (content) {
+            content.style.opacity = '1';
+            content.style.visibility = 'visible';
+            content.style.transform = 'scale(1)';
+          }
+          // 播放音乐
+          var audio = document.getElementById('bgm-audio');
+          if (audio) {
+            audio.play().catch(function() {});
+          }
+          return;
+        }
+      }
+      target = target.parentElement;
+    }
+    log('  -> 无匹配ID', '#888');
+  };
+
+  // 同时绑定 click 和 touchend
+  document.addEventListener('click', handleInteraction, true);
+  document.addEventListener('touchend', handleInteraction, true);
+
+  log('v19 事件委托已绑定 (click+touchend)', '#0f0');
+
+  // 页面加载完成后执行
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    log('DOM 已就绪，立即执行 init');
+    init();
+  } else {
+    log('等待 DOMContentLoaded');
+    document.addEventListener('DOMContentLoaded', init);
+  }
+
+  // 备用：延迟执行
+  setTimeout(function() {
+    log('500ms 延迟触发');
+    init();
+  }, 500);
+})();
+          `
+        }}
+      />
+
+      {/* ==================== 调试面板（移到顶层，不受 game-content 影响） ==================== */}
+      {SHOW_DEBUG_PANEL && (
+        <DebugPanel
+          testMode={testMode}
+          onTestModeChange={handleTestModeChange}
+          userPhone={userPhone}
+          collected={collected}
+          cardCounts={cardCounts}
+          onQuickLogin={quickLogin}
+          onSetCards={setCards}
+          onResetSmall={resetCards}
+          onResetLarge={resetAll}
+          onBossKey={bossKey}
+          onDrawSpecificCard={drawSpecificCard}
+        />
+      )}
+
       {/* 外层容器 - 撑满屏幕 */}
       <div className="relative w-full h-full max-w-[480px] mx-auto">
 
         {/* ==================== 背景图层（自适应撑满） ==================== */}
-        <div className={cn(
-          "absolute inset-0 transition-all duration-[600ms] ease-out",
-          styles.campaignRoot,
-          gamePageReady ? "opacity-100" : "opacity-0"
-        )}>
+        {/* v17: 恢复初始隐藏状态，由内联脚本控制显示 */}
+        <div
+          id="game-background"
+          className={cn(
+            "absolute inset-0",
+            styles.campaignRoot
+          )}
+          style={{
+            display: 'none',
+            visibility: 'hidden',
+            opacity: 0,
+          }}
+        >
           {/* 背景图会通过 CSS 设置，这里作为背景容器 */}
         </div>
 
         {/* ==================== 主内容区（9:16 比例居中） ==================== */}
         <div 
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 overflow-hidden"
+          className="absolute overflow-hidden"
           style={{
-            aspectRatio: '9/16',
-            width: 'min(100%, calc(100vh * 9 / 16))',
-            height: 'min(100%, calc(100vw * 16 / 9))',
+            left: '50%',
+            top: '50%',
+            // 9:16 比例计算 - 兼容荣耀/华为 WebView（不支持 aspectRatio 和 calc）
+            width: '100%',
+            maxWidth: '480px',
+            // 使用百分比高度和 padding-top 技巧实现 9:16 比例（兼容性更好）
+            height: '100vh',
             maxHeight: '100%',
+            // Transform 兼容性 - 支持荣耀/华为浏览器和 iOS
+            WebkitTransform: 'translate(-50%, -50%)',
+            msTransform: 'translate(-50%, -50%)',
+            transform: 'translate(-50%, -50%)',
             // Safari 防滚动
             touchAction: 'none',
             overscrollBehavior: 'none',
@@ -753,27 +1862,16 @@ export default function BankCampaignPage() {
         >
 
         {/* ==================== 游戏页内容 ==================== */}
-        <div className={cn(
-          "absolute inset-0 flex flex-col transition-all duration-[600ms] ease-out",
-          gamePageReady ? "opacity-100 scale-100" : "opacity-0 scale-95"
-        )}>
-
-          {/* ==================== 调试面板（默认隐藏） ==================== */}
-          {SHOW_DEBUG_PANEL && (
-            <DebugPanel
-              testMode={testMode}
-              onTestModeChange={handleTestModeChange}
-              userPhone={userPhone}
-              collected={collected}
-              cardCounts={cardCounts}
-              onQuickLogin={quickLogin}
-              onSetCards={setCards}
-              onResetSmall={resetCards}
-              onResetLarge={resetAll}
-              onBossKey={bossKey}
-              onDrawSpecificCard={drawSpecificCard}
-            />
-          )}
+        {/* v17: 恢复初始隐藏状态，由内联脚本控制显示 */}
+        <div
+          id="game-content"
+          className="absolute inset-0 flex flex-col"
+          style={{
+            opacity: 0,
+            transform: 'scale(0.95)',
+            visibility: 'hidden',
+          }}
+        >
 
           {/* ==================== 顶部Logo区域 ==================== */}
           <div className="flex justify-end items-center px-2 pt-2 z-10">
@@ -787,11 +1885,13 @@ export default function BankCampaignPage() {
 
           {/* ==================== 音乐按钮 - 悬浮在右上角 ==================== */}
           <button
+            id="music-btn"
             onClick={toggleMusic}
             className="fixed top-9 right-2 z-[200] w-7 h-7 flex items-center justify-center transition-opacity active:opacity-70"
             aria-label={isMusicPlaying ? '关闭音乐' : '开启音乐'}
           >
             <img
+              id="music-btn-img"
               src={isMusicPlaying ? "/images/campaign/design/播放按钮.png" : "/images/campaign/design/暂停按钮.png"}
               alt={isMusicPlaying ? "暂停" : "播放"}
               className="w-full h-full object-contain"
@@ -826,29 +1926,46 @@ export default function BankCampaignPage() {
               - 卡片中心: x=535 (49.5%), y=933 (48.6%)
               - 卡片尺寸占比: 宽=63.7%, 高=47.5%
             */}
-            <div 
+            <div
               className="absolute z-10"
               style={{
                 left: '49.5%',
-                top: '38%',
+                top: '45%',
+                // Transform 兼容性 - 支持荣耀/华为浏览器
+                WebkitTransform: 'translate(-50%, -50%)',
+                msTransform: 'translate(-50%, -50%)',
                 transform: 'translate(-50%, -50%)',
                 width: '65%',
-                aspectRatio: '688/912',
+                // aspectRatio 兼容性 - 使用 padding-top 技巧替代（支持旧版 WebView）
+                // 688/912 ≈ 0.754
+                paddingTop: '132.56%', // 912/688 * 100% ≈ 132.56%
+                position: 'relative',
               }}
             >
-              {/* 卡片组件 */}
-              <Card
-                drawPhase={drawPhase}
-                resultChar={currentResult}
-                onDraw={drawCard}
-                disabled={false}
-                hasDrawnToday={hasDrawnToday}
-                onAlreadyDrawnClick={() => showToastMessage('每天可抽卡一次，请明天再来哦')}
-              />
+              {/* v18: 卡片组件 - 使用绝对定位填满 padding-top 撑开的容器 */}
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+                <Card
+                  drawPhase={drawPhase}
+                  resultChar={currentResult}
+                  onDraw={drawCard}
+                  disabled={false}
+                  hasDrawnToday={hasDrawnToday}
+                  onAlreadyDrawnClick={() => showToastMessage('每天可抽卡一次，请明天再来哦')}
+                />
+              </div>
 
 
               {/* 抽卡按钮 - 重叠在卡片底部 */}
-              <div className="absolute bottom-[5%] left-1/2 -translate-x-1/2 w-[90%] z-20">
+              <div 
+                className="absolute bottom-[5%] w-[90%] z-20"
+                style={{
+                  left: '50%',
+                  // Transform 兼容性 - 支持荣耀/华为浏览器和 iOS
+                  WebkitTransform: 'translateX(-50%)',
+                  msTransform: 'translateX(-50%)',
+                  transform: 'translateX(-50%)',
+                }}
+              >
                 <DrawButton
                   onClick={drawCard}
                   disabled={collected.every(Boolean)}
@@ -864,8 +1981,8 @@ export default function BankCampaignPage() {
 
           {/* ==================== 收集槽区域（固定在底部） ==================== */}
           {/* 播放最终动画时渐变隐藏，1秒过渡 */}
-          <div 
-            className="absolute bottom-[5%] left-0 right-0 z-10 transition-opacity duration-1000"
+          <div
+            className="absolute bottom-[10%] left-0 right-0 z-10 transition-opacity duration-1000"
             style={{ opacity: showFinal ? 0 : 1 }}
           >
             <CollectionSlots
@@ -879,8 +1996,9 @@ export default function BankCampaignPage() {
           </div>
 
           {/* ==================== 规则按钮 ==================== */}
+          {/* v16: 移除 React onClick，由内联脚本控制 */}
           <div className="w-full flex justify-center py-4 z-10">
-            <RulesButton onClick={() => setShowRules(true)} />
+            <RulesButton />
           </div>
         </div>
 
@@ -911,61 +2029,90 @@ export default function BankCampaignPage() {
           onClose={() => setShowRules(false)}
         />
 
-        {/* ==================== Toast 提示浮层 ==================== */}
-        {showToast && (
-          <ClientPortal>
-            <div className="fixed inset-0 z-[600] flex items-center justify-center pointer-events-none">
-              <div className="bg-black/80 text-white px-6 py-4 rounded-lg shadow-xl max-w-[280px] text-center">
-                <span className="text-sm">{toastMessage}</span>
-              </div>
+        {/* ==================== Toast 提示浮层 - 始终渲染，用 display 控制 ==================== */}
+        <ClientPortal>
+          <div
+            id="toast-container"
+            className="fixed inset-0 z-[600] flex items-center justify-center pointer-events-none"
+            style={{ display: showToast ? 'flex' : 'none' }}
+          >
+            <div id="toast" className="bg-black/80 text-white px-6 py-4 rounded-lg shadow-xl max-w-[280px] text-center">
+              <span id="toast-msg" className="text-sm">{toastMessage}</span>
             </div>
-          </ClientPortal>
-        )}
+          </div>
+        </ClientPortal>
 
-        {/* ==================== 欢迎页（顶层）- Portal 到 body，异形屏也真正全屏 ==================== */}
+        {/* ==================== 欢迎页（顶层）v13 - 完全原生事件 ==================== */}
         {showWelcome && (
-          <ClientPortal>
-            <div
-              className={cn(
-                "fixed inset-0 z-[1000] transition-all duration-[600ms] ease-out",
-                isTransitioning ? "opacity-0 scale-105" : "opacity-100 scale-100"
-              )}
-            >
-              {/* 欢迎页烟花视频背景 - 放大充满屏幕 */}
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ 
-                  minWidth: '100%', 
-                  minHeight: '100%',
+          <div
+            id="welcome-page"
+            style={{
+              display: 'block',
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: 1000,
+              backgroundColor: '#b81c22',
+              backgroundImage: 'linear-gradient(to bottom, #b81c22, #ff8c42, #fff5e6)',
+              cursor: 'pointer',
+            }}
+          >
+              {/* 欢迎页背景图片 - 设置为不可交互 */}
+              <img
+                src="/images/welcome-cover.png"
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
+                  pointerEvents: 'none',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none',
+                }}
+              />
+
+              {/* 点击进入按钮 - 仅作为视觉提示 */}
+              <span
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  bottom: '8%',
+                  left: 0,
+                  right: 0,
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  pointerEvents: 'none',
                 }}
               >
-                <source src="/video/fireworks-v3.m4v" type="video/mp4" />
-              </video>
-              
-              {/* 点击进入按钮 - 带呼吸动画，固定在底部 */}
-              <div className="absolute bottom-[8%] left-0 right-0 flex justify-center">
                 <img
                   src="/images/start-btn.png"
-                  alt="立即参与"
-                  onClick={handleStartGame}
-                  className={cn(
-                    "w-[38%] max-w-[160px] cursor-pointer",
-                    styles.breathingBtn,
-                    isTransitioning && "opacity-0 translate-y-4"
-                  )}
+                  alt=""
+                  draggable={false}
+                  style={{
+                    width: '38%',
+                    maxWidth: '160px',
+                    display: 'block',
+                    pointerEvents: 'none',
+                  }}
                 />
-              </div>
+              </span>
             </div>
-          </ClientPortal>
         )}
 
         {/* ==================== 背景音乐 ==================== */}
         <audio
+          id="bgm-audio"
           ref={audioRef}
           src="/audio/bgm.mp3"
           loop

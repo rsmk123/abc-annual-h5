@@ -20,7 +20,7 @@
 
   /* 使用设计稿背景图 */
   background-image: url('/images/campaign/design/bg.png');
-  background-size: cover;
+  background-size: 100% auto;
   background-position: center top;
   background-repeat: no-repeat;
   min-height: 100vh;
@@ -45,33 +45,54 @@
   letter-spacing: 0;
 }
 
-/* 3D透视容器 */
+/* 3D透视容器 - 为兼容农行 WebView，使用 2D 替代方案 */
 .perspectiveContainer {
-  perspective: 1200px;
+  /* 移除 perspective，某些 WebView 不支持会导致黑屏 */
+  /* perspective: 1200px; */
+  position: relative;
 }
 
-/* 卡片容器 */
+/* 卡片容器 - 使用 2D 动画替代 3D 翻转 */
 .cardContainer {
-  transform-style: preserve-3d;
-  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* 移除 preserve-3d，使用更安全的 2D 变换 */
+  /* transform-style: preserve-3d; */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  -webkit-transition: opacity 0.3s ease, -webkit-transform 0.3s ease;
 }
 
 .cardContainer.flipped {
-  transform: rotateY(180deg);
+  /* 使用透明度替代 3D 翻转，兼容性更好 */
+  /* transform: rotateY(180deg); */
+  opacity: 0;
 }
 
-/* 卡片正反面 */
+/* 卡片正反面 - 移除 backface-visibility，在某些 WebView 上可能导致黑屏 */
 .cardFace {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  /* backface-visibility: hidden; */
+  /* -webkit-backface-visibility: hidden; */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* 背面 - 使用设计稿图片，不需要额外背景 */
 .cardBack {
   background: transparent;
   border: none;
+  /* Flexbox 兼容性 - 支持荣耀/华为浏览器 */
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
   display: flex;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  -webkit-justify-content: center;
   justify-content: center;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  -webkit-align-items: center;
   align-items: center;
 }
 
@@ -79,8 +100,18 @@
   background: #b81c22;
   width: 100%; height: 100%;
   border-radius: 24px;
+  /* Flexbox 兼容性 - 支持荣耀/华为浏览器 */
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: -webkit-flex;
   display: flex;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  -webkit-justify-content: center;
   justify-content: center;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  -webkit-align-items: center;
   align-items: center;
   border: 6px solid #fff;
   position: relative;
@@ -96,15 +127,20 @@
   color: rgba(0,0,0,0.1);
   position: absolute;
   top: 50%; left: 50%;
+  /* Transform 兼容性 - 支持荣耀/华为浏览器 */
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
 
-/* 正面 */
+/* 正面 - 移除 3D 变换，使用 z-index 控制显示层级 */
 .cardFront {
   background-color: var(--card-bg);
-  transform: rotateY(180deg);
+  /* 移除 rotateY，不支持的 WebView 会导致黑屏 */
+  /* transform: rotateY(180deg); */
   border: var(--card-border);
+  z-index: 1;
 }
 
 /* 字符 - 高级黑体质感 */
@@ -116,7 +152,9 @@
   font-family: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
   font-weight: 800; /* 加粗黑体 */
   letter-spacing: -2px; /* 紧凑一点更现代 */
-  filter: drop-shadow(0 2px 0px rgba(0,0,0,0.1));
+  /* 移除 filter: drop-shadow，改用 text-shadow（兼容性更好） */
+  /* filter: drop-shadow(0 2px 0px rgba(0,0,0,0.1)); */
+  text-shadow: 0 2px 0 rgba(0,0,0,0.1);
   position: relative;
 }
 
@@ -126,6 +164,9 @@
   position: absolute;
   top: 50%; left: 50%;
   width: 120%; height: 120%;
+  /* Transform 兼容性 - 支持荣耀/华为浏览器 */
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
   transform: translate(-50%, -50%);
   background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
   z-index: -1;
@@ -188,33 +229,38 @@
 
 /* ============ 抽卡旋转动画 ============ */
 
-/* 抽卡旋转动画 - 5圈 + 惯性停止 */
+/* 抽卡旋转动画 - 简化版，移除 filter: blur() 以兼容农行 WebView */
+/* 农行 WebView 和某些荣耀手机内核不支持动画中的 filter 属性，会导致黑屏 */
 @keyframes cardDrawSpin {
   0% {
-    transform: rotateY(0deg) scale(1);
-    filter: blur(0);
-  }
-  5% {
-    transform: rotateY(0deg) scale(0.95);
-    filter: blur(1px);
+    -webkit-transform: scale(1);
+    -ms-transform: scale(1);
+    transform: scale(1);
+    opacity: 1;
   }
   10% {
-    transform: rotateY(180deg) scale(0.95);
+    -webkit-transform: scale(0.9);
+    -ms-transform: scale(0.9);
+    transform: scale(0.9);
+    opacity: 0.8;
   }
-  85% {
-    transform: rotateY(1620deg) scale(0.98);
-  }
-  95% {
-    transform: rotateY(1760deg) scale(1);
+  50% {
+    -webkit-transform: scale(0.95);
+    -ms-transform: scale(0.95);
+    transform: scale(0.95);
+    opacity: 0.6;
   }
   100% {
-    transform: rotateY(1800deg) scale(1);
-    filter: blur(0);
+    -webkit-transform: scale(1);
+    -ms-transform: scale(1);
+    transform: scale(1);
+    opacity: 0;
   }
 }
 
 .cardSpinning {
-  animation: cardDrawSpin 2.5s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+  -webkit-animation: cardDrawSpin 0.5s ease-out forwards;
+  animation: cardDrawSpin 0.5s ease-out forwards;
 }
 
 /* ============ 收集金币弹入动画 ============ */
@@ -239,6 +285,8 @@
 /* ============ 哇宝骑马动画（简化版） ============ */
 @keyframes wabaoRiding {
   0% {
+    -webkit-transform: translate(-50%, -50%) scale(0.1);
+    -ms-transform: translate(-50%, -50%) scale(0.1);
     transform: translate(-50%, -50%) scale(0.1);
     opacity: 0;
   }
@@ -246,16 +294,24 @@
     opacity: 1;
   }
   80% {
+    -webkit-transform: translate(-50%, -50%) scale(0.95);
+    -ms-transform: translate(-50%, -50%) scale(0.95);
     transform: translate(-50%, -50%) scale(0.95);
   }
   100% {
+    -webkit-transform: translate(-50%, -50%) scale(1);
+    -ms-transform: translate(-50%, -50%) scale(1);
     transform: translate(-50%, -50%) scale(1);
   }
 }
 
 .wabaoRidingContainer {
   position: fixed;
-  inset: 0;
+  /* inset: 0; 旧版 WebView 不支持，使用显式属性 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 100;
   background: transparent;
   pointer-events: none;
@@ -290,26 +346,35 @@
 }
 
 /* ============ 按钮禁用状态 ============ */
+/* 移除 filter: grayscale，某些 WebView 不支持会导致黑屏 */
 .btnDisabled {
-  filter: grayscale(50%);
-  opacity: 0.7;
+  /* filter: grayscale(50%); */
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 /* ============ 呼吸动画效果 ============ */
+/* 移除 filter: brightness，某些 WebView 不支持会导致黑屏 */
 @keyframes breathing {
   0%, 100% {
+    -webkit-transform: scale(1);
+    -ms-transform: scale(1);
     transform: scale(1);
-    filter: brightness(1);
+    opacity: 1;
   }
   50% {
+    -webkit-transform: scale(1.05);
+    -ms-transform: scale(1.05);
     transform: scale(1.05);
-    filter: brightness(1.1);
+    opacity: 0.95;
   }
 }
 
 .breathingBtn {
+  -webkit-animation: breathing 2s ease-in-out infinite;
   animation: breathing 2s ease-in-out infinite;
+  -webkit-transform-origin: center center;
+  -ms-transform-origin: center center;
   transform-origin: center center;
 }
 
@@ -353,7 +418,16 @@
 }
 
 .loginInput {
-  background: linear-gradient(135deg, #fff8e7 0%, #ffe4c4 100%);
+  /* 渐变背景兼容性 - 支持荣耀/华为浏览器 */
+  background: #fff8e7; /* 后备单色 */
+  /* WebKit 前缀（Chrome, Safari, 旧版 Android） */
+  background: -webkit-linear-gradient(left, #fff8e7, #ffe4c4);
+  /* Firefox 前缀 */
+  background: -moz-linear-gradient(left, #fff8e7, #ffe4c4);
+  /* IE/Edge 前缀 */
+  background: -ms-linear-gradient(left, #fff8e7, #ffe4c4);
+  /* 标准语法 */
+  background: linear-gradient(to right, #fff8e7, #ffe4c4);
   border-radius: 50px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -433,7 +507,11 @@
 
 .cardGlow {
   position: absolute;
-  inset: -20px;
+  /* inset: -20px; 旧版 WebView 不支持，使用显式属性 */
+  top: -20px;
+  right: -20px;
+  bottom: -20px;
+  left: -20px;
   background: radial-gradient(ellipse at center, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
   z-index: -1;
   pointer-events: none;
@@ -501,7 +579,11 @@
 /* ============ 烟花效果 ============ */
 .fireworksContainer {
   position: fixed;
-  inset: 0;
+  /* inset: 0; 旧版 WebView 不支持，使用显式属性 */
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   pointer-events: none;
   z-index: 0;
   overflow: hidden;
@@ -564,10 +646,14 @@
 @keyframes fadeInDown {
   from {
     opacity: 0;
+    -webkit-transform: translateY(-20px);
+    -ms-transform: translateY(-20px);
     transform: translateY(-20px);
   }
   to {
     opacity: 1;
+    -webkit-transform: translateY(0);
+    -ms-transform: translateY(0);
     transform: translateY(0);
   }
 }
@@ -575,10 +661,14 @@
 @keyframes fadeInUp {
   from {
     opacity: 0;
+    -webkit-transform: translateY(20px);
+    -ms-transform: translateY(20px);
     transform: translateY(20px);
   }
   to {
     opacity: 1;
+    -webkit-transform: translateY(0);
+    -ms-transform: translateY(0);
     transform: translateY(0);
   }
 }

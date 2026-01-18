@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
-import styles from './campaign.module.css';
-import { cn } from '@/lib/utils';
+import React, { useState, useEffect } from 'react';
+// 移除 Next.js Image 组件，使用原生 img 标签以兼容农行 WebView
 import { FrameAnimation } from './FrameAnimation';
-import { ClientPortal } from './ClientPortal';
+// v19: 移除 ClientPortal，直接渲染，避免 Portal 在某些 WebView 中不工作
 import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface FinalRewardModalProps {
@@ -75,27 +73,39 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
     onClose();
   };
 
-  if (!showAnimation) return null;
+  // 移除条件渲染，改用 display:none 控制显示
+  // if (!showAnimation) return null;
 
   return (
-    <ClientPortal>
-      {/* 全屏半透明黑底 - 深一点遮住底部元素，1秒渐入效果 */}
-      <div 
-        className="fixed inset-0 z-[100] flex items-center justify-center transition-opacity duration-1000"
-        style={{ 
+    <>
+      {/* v19: 移除 ClientPortal，直接渲染，避免 Portal 在某些 WebView 中不工作 */}
+      <div
+        id="final-modal"
+        className="transition-opacity duration-1000"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 100,
+          display: 'none', // 默认隐藏，由内联脚本控制
+          justifyContent: 'center',
+          alignItems: 'center',
           backgroundColor: 'rgba(0, 0, 0, 0.85)',
           opacity: fadeIn ? 1 : 0,
         }}
         onClick={handleClose}
       >
-        {/* 9:16 核心内容区 - 与主页面保持一致的比例 */}
+        {/* 9:16 核心内容区 - 简化实现，避免复杂 calc 计算导致农行 WebView 兼容性问题 */}
         <div 
           className="relative"
           style={{
-            aspectRatio: '9/16',
-            width: 'min(100%, calc(100vh * 9 / 16))',
-            height: 'min(100%, calc(100vw * 16 / 9))',
-            maxHeight: '100%',
+            // 使用简单的百分比尺寸，更好的 WebView 兼容性
+            width: '100%',
+            height: '100%',
+            maxWidth: '480px',
+            margin: '0 auto',
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -124,7 +134,13 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
                 opacity: showScrollArea ? 1 : 0,
               }}
             >
-              <span className="text-white text-base font-bold drop-shadow-lg">
+              {/* 移除 drop-shadow-lg，filter 在某些 WebView 上会导致黑屏 */}
+              <span 
+                className="text-white text-base font-bold"
+                style={{
+                  textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                }}
+              >
                 用户: {maskPhone(userPhone)}
               </span>
             </div>
@@ -136,6 +152,9 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
             style={{
               top: '71%',
               left: '50%',
+              // Transform 兼容性 - 支持荣耀/华为浏览器
+              WebkitTransform: 'translateX(-50%)',
+              msTransform: 'translateX(-50%)',
               transform: 'translateX(-50%)',
               width: '75%',
               height: '16%',
@@ -156,12 +175,15 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
                   display: none;
                 }
               `}</style>
-              <Image
+              {/* 使用原生 img 标签兼容农行 WebView */}
+              <img
                 src="/images/campaign/modals/rules.png"
                 alt="活动规则"
-                width={750}
-                height={2000}
-                className="w-full h-auto"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                }}
               />
             </div>
           </div>
@@ -169,6 +191,7 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
           {/* 我知道了按钮点击区域 - 在滚动区域显示后就可点击，扩大热区 */}
           {showScrollArea && (
             <div
+              id="final-close"
               className="absolute bottom-0 left-0 right-0 h-[15%] z-[200] flex items-center justify-center"
               onClick={(e) => {
                 e.preventDefault();
@@ -182,6 +205,6 @@ export const FinalRewardModal: React.FC<FinalRewardModalProps> = ({ isOpen, user
           )}
         </div>
       </div>
-    </ClientPortal>
+    </>
   );
 };

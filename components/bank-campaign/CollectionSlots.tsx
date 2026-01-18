@@ -1,5 +1,5 @@
 import React from 'react';
-import Image from 'next/image';
+// 移除 Next.js Image 组件，使用原生 img 标签以兼容农行 WebView
 import { cn } from '@/lib/utils';
 import { CARDS, CardChar } from '@/lib/cardConfig';
 
@@ -33,19 +33,24 @@ const SHADOW_IMAGE = '/images/campaign/slots-new/shadow.png';
 export const CollectionSlots: React.FC<CollectionSlotsProps> = ({ collected, cardCounts, onCardClick }) => {
   return (
     <div className="w-full px-3 pb-4 z-10">
-      {/* 5个卡槽横排 */}
-      <div className="flex justify-between gap-1">
+      {/* 5个卡槽横排 - v16: 使用 margin 替代 justify-between，兼容旧版 WebView */}
+      <div className="flex justify-center">
         {CARDS.map((char, idx) => {
           const isCollected = collected[idx];
           const count = cardCounts?.[idx] || 0;
 
           return (
-            <div 
-              key={idx} 
+            <div
+              id={`slot-${idx}`}
+              key={idx}
               className={cn(
-                "flex-1 relative",
+                "relative",
                 isCollected && "cursor-pointer active:scale-95 transition-transform"
               )}
+              style={{
+                width: '18%',
+                marginRight: idx < 4 ? '2%' : '0',
+              }}
               onClick={() => {
                 if (isCollected && onCardClick) {
                   onCardClick(char);
@@ -62,6 +67,7 @@ export const CollectionSlots: React.FC<CollectionSlotsProps> = ({ collected, car
               {/* 内容：阴影或蛙宝 */}
               <div className="absolute inset-0 flex items-center justify-center" style={{ top: '-18%' }}>
                 <img
+                  id={`slot-img-${idx}`}
                   src={isCollected ? WABAO_IMAGES[idx] : SHADOW_IMAGE}
                   alt={char}
                   className={cn(
@@ -84,11 +90,11 @@ export const CollectionSlots: React.FC<CollectionSlotsProps> = ({ collected, car
       </div>
 
       {/* 底部提示文案 - 使用设计稿图片 */}
-      <div className="text-center mt-3">
+      <div className="flex justify-center mt-3">
         <img
           src="/images/campaign/design/hint-text.png"
           alt="集齐5张卡即可参与抽奖"
-          className="h-5 mx-auto"
+          className="h-5"
         />
       </div>
     </div>

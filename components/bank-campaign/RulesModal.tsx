@@ -1,8 +1,6 @@
 import React from 'react';
-import Image from 'next/image';
-import styles from './campaign.module.css';
-import { cn } from '@/lib/utils';
-import { ClientPortal } from './ClientPortal';
+// 移除 Next.js Image 组件，使用原生 img 标签以兼容农行 WebView
+// v22: 移除 cn，完全使用内联样式
 import { useBodyScrollLock } from './useBodyScrollLock';
 
 interface RulesModalProps {
@@ -14,55 +12,128 @@ export const RulesModal: React.FC<RulesModalProps> = ({ isOpen, onClose }) => {
   // 锁定 body 滚动
   useBodyScrollLock(isOpen);
 
-  if (!isOpen) return null;
+  // v22: 完全内联样式，兼容旧版 WebView
 
   return (
-    <ClientPortal>
-      <div 
-        className={cn(
-          "fixed inset-0 z-[300] flex flex-col justify-center items-center p-4",
-          "transition-opacity duration-300"
-        )}
-        style={{ backgroundColor: 'rgba(0, 0, 0, 0.75)' }}
-        onClick={onClose}
+    <>
+      {/* v22: 完全内联样式版本，兼容荣耀等旧版 WebView */}
+      <div
+        id="rules-modal"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 300,
+          display: 'none', // 默认隐藏，由内联脚本控制
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '16px',
+          backgroundColor: 'rgba(0, 0, 0, 0.75)',
+          transition: 'opacity 0.3s',
+        }}
       >
-        {/* 弹窗容器 - 缩小宽度 */}
-        <div 
-          className="relative w-[90%] max-w-[400px] flex items-center justify-center"
+        {/* 弹窗容器 */}
+        <div
+          style={{
+            position: 'relative',
+            width: '90%',
+            maxWidth: '400px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* 外层卡片背景：米色底 + 深色边框 */}
-          <div className="relative w-full aspect-[3/4] rounded-[24px] overflow-hidden shadow-2xl bg-[#FFFBF0] border-[4px] border-[#FAEBD7]">
-            
-            {/* 白色圆角矩形内容区 - 极小边距 */}
-            <div className="absolute top-[8px] left-[8px] right-[8px] bottom-[12px] bg-white rounded-[18px] overflow-hidden shadow-sm">
-              <div className="w-full h-full overflow-y-auto px-1 py-2">
-                <Image
+          {/* 外层卡片背景：使用 padding-top 技巧实现 3:4 宽高比 */}
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              paddingTop: '133.33%', // 4/3 * 100% = 133.33% 实现 3:4 宽高比
+              borderRadius: '24px',
+              overflow: 'hidden',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              backgroundColor: '#FFFBF0',
+              border: '4px solid #FAEBD7',
+            }}
+          >
+            {/* 白色圆角矩形内容区 - 使用绝对定位填满 */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '8px',
+                left: '8px',
+                right: '8px',
+                bottom: '12px',
+                backgroundColor: 'white',
+                borderRadius: '18px',
+                overflow: 'hidden',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  overflowY: 'auto',
+                  paddingLeft: '4px',
+                  paddingRight: '4px',
+                  paddingTop: '8px',
+                  paddingBottom: '8px',
+                  WebkitOverflowScrolling: 'touch',
+                }}
+              >
+                {/* 使用原生 img 标签兼容农行 WebView */}
+                <img
                   src="/images/campaign/modals/rules.png"
                   alt="抽奖流程"
-                  width={750}
-                  height={2000}
-                  className="w-full h-auto"
-                  priority
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                  }}
                 />
               </div>
             </div>
           </div>
 
-          {/* 关闭按钮 - 悬浮在底部 */}
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
+          {/* 关闭按钮 - 悬浮在底部，完全内联样式 */}
+          <button
+            id="rules-close"
+            style={{
+              position: 'absolute',
+              bottom: '-64px',
+              left: '50%',
+              WebkitTransform: 'translateX(-50%)',
+              msTransform: 'translateX(-50%)',
+              transform: 'translateX(-50%)',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              border: '2px solid rgba(255, 255, 255, 0.6)',
+              backgroundColor: 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'rgba(255, 255, 255, 0.8)',
+              cursor: 'pointer',
             }}
-            className="absolute -bottom-16 w-10 h-10 rounded-full border-2 border-white/60 flex items-center justify-center text-white/80 hover:bg-white/10 transition-all"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg
+              style={{ width: '20px', height: '20px' }}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
       </div>
-    </ClientPortal>
+    </>
   );
 };
