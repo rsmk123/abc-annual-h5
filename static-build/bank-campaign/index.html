@@ -89,16 +89,17 @@
        游戏背景
        ============================================================ */
     #game-background {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
       display: none;
       background-image: url('/images/campaign/design/bg.png');
-      background-size: 100% auto;
-      background-position: top center;
+      background-size: cover;
+      background-position: center center;
       background-repeat: no-repeat;
+      z-index: 0;
     }
 
     #game-background img {
@@ -115,6 +116,7 @@
       width: 100%;
       height: 100%;
       display: none;
+      z-index: 1;
     }
 
     /* ============================================================
@@ -867,7 +869,7 @@
       background: transparent;
       border: none;
       cursor: pointer;
-      z-index: 20;
+      z-index: 100;
       display: none;
     }
 
@@ -1257,7 +1259,7 @@
 
         <!-- 音乐按钮 - 移到 game-content 内部 -->
         <button id="music-btn" onclick="Game.toggleMusic()">
-          <img id="music-icon" src="/images/campaign/design/暂停按钮.png" alt="音乐">
+          <img id="music-icon" src="/images/campaign/design/播放按钮.png" alt="音乐">
         </button>
       </div>
 
@@ -1519,7 +1521,9 @@
         agreed: true,
         isMusicPlaying: false,
         frameCache: {},
-        drawFramesPreloaded: false  // 标记抽卡动画帧是否已预加载
+        drawFramesPreloaded: false,  // 标记抽卡动画帧是否已预加载
+        horseFramesPreloaded: false, // 标记骑马动画帧是否已预加载
+        resultImagesPreloaded: false // 标记结果卡片是否已预加载
       };
 
       // ============================================================
@@ -1980,22 +1984,35 @@
         horseFrames: [],     // 骑马帧 img 元素数组
         currentTimer: null,
 
-        // 静默预加载图片（不创建 DOM，只缓存到内存）
+        // 静默预加载图片（不创建 DOM，只缓存到内存）- 分批控制并发
         silentPreload: function(paths, onComplete, onProgress) {
           var loaded = 0;
           var total = paths.length;
+          var currentIndex = 0;
+          var concurrency = 6;  // 控制并发数，与浏览器连接数匹配
 
-          for (var i = 0; i < total; i++) {
-            (function(index) {
-              var img = new Image();
-              img.onload = img.onerror = function() {
-                loaded++;
-                State.frameCache[paths[index]] = img;
-                if (onProgress) onProgress(loaded, total);
-                if (loaded >= total && onComplete) onComplete();
-              };
-              img.src = paths[index];
-            })(i);
+          function loadNext() {
+            if (currentIndex >= total) return;
+
+            var index = currentIndex++;
+            var img = new Image();
+            img.onload = img.onerror = function() {
+              loaded++;
+              State.frameCache[paths[index]] = img;
+              if (onProgress) onProgress(loaded, total);
+              if (loaded >= total) {
+                if (onComplete) onComplete();
+              } else {
+                loadNext();  // 加载完一个就启动下一个
+              }
+            };
+            img.src = paths[index];
+          }
+
+          // 启动初始批次
+          var initialBatch = Math.min(concurrency, total);
+          for (var i = 0; i < initialBatch; i++) {
+            loadNext();
           }
         },
 
@@ -2014,17 +2031,43 @@
           Animation.silentPreload(paths, onComplete);
         },
 
+        // 预加载骑马动画帧（127帧）
+        preloadHorseFrames: function(onComplete) {
+          var paths = [];
+          for (var i = 0; i < CONFIG.HORSE_FRAMES; i++) {
+            paths.push('/images/frames/horse-ride/骑马青蛙_' + Utils.padFrame(i) + '.png');
+          }
+          Animation.silentPreload(paths, onComplete);
+        },
+
+        // 预加载结果卡片图片（5张）
+        preloadResultImages: function(onComplete) {
+          Animation.silentPreload(CONFIG.RESULT_IMAGES, onComplete);
+        },
+
         // 从缓存创建 DOM 元素（同步，无需等待）
         createFramesFromCache: function(container, paths, callback) {
           var frames = [];
-          container.innerHTML = '';
+
+          // 只删除 .frame 类的图片，保留叠加层元素
+          var oldFrames = container.querySelectorAll('img.frame');
+          for (var j = 0; j < oldFrames.length; j++) {
+            container.removeChild(oldFrames[j]);
+          }
 
           for (var i = 0; i < paths.length; i++) {
             var cachedImg = State.frameCache[paths[i]];
             var img = document.createElement('img');
+            img.className = 'frame';  // 添加 class 使 CSS 样式生效
             img.src = cachedImg ? cachedImg.src : paths[i];
             img.style.visibility = 'hidden';
-            container.appendChild(img);
+
+            // 插入到容器最前面，确保叠加元素在上面
+            if (container.firstChild) {
+              container.insertBefore(img, container.firstChild);
+            } else {
+              container.appendChild(img);
+            }
             frames[i] = img;
           }
 
@@ -2208,8 +2251,8 @@
             container.style.opacity = '1';
           }, 10);
 
-          // 6.5秒后显示叠加内容（手机号 + 滚动区域 + 关闭按钮）
-          setTimeout(function() {
+          // 显示叠加内容的函数（手机号 + 滚动区域 + 关闭按钮）
+          var showOverlay = function() {
             var phone = Utils.$('final-phone');
             var scroll = Utils.$('final-scroll-area');
             var closeBtn = Utils.$('final-close-btn');
@@ -2220,7 +2263,7 @@
             }
             if (scroll) scroll.style.opacity = '1';
             if (closeBtn) closeBtn.style.display = 'block';
-          }, 6500);
+          };
 
           // 生成帧路径
           var paths = [];
@@ -2228,30 +2271,46 @@
             paths.push('/images/frames/horse-ride/骑马青蛙_' + Utils.padFrame(i) + '.png');
           }
 
-          // 显示加载提示
-          Utils.showLoading();
-          var loadingText = Utils.$('loading-text');
-          if (loadingText) {
-            loadingText.textContent = '加载动画 0%';
-          }
+          // 检查是否已预加载
+          var allCached = paths.every(function(p) {
+            return State.frameCache[p];
+          });
 
-          // 预加载并创建帧
-          Animation.preloadAndCreateFrames(container, paths, function(frames) {
-            Utils.hideLoading();
+          // 播放动画的通用逻辑（使用 onNearComplete 触发叠加层）
+          var playAnimation = function(frames) {
             Animation.horseFrames = frames;
-
-            // 播放动画，播完后保持最后一帧显示
             Animation.playWithVisibility(frames, CONFIG.HORSE_FPS, function() {
-              // 动画播放完成，保持最后一帧显示（不隐藏）
+              // 动画播放完成，保持最后一帧显示
               if (onComplete) onComplete();
+            }, function() {
+              // 动画快完成时（约80%）显示叠加层
+              showOverlay();
             });
-          }, function(loaded, total) {
-            var percent = Math.round(loaded / total * 100);
+          };
+
+          if (allCached) {
+            // 已预加载，直接创建 DOM 并播放（无需 loading）
+            Animation.createFramesFromCache(container, paths, playAnimation);
+          } else {
+            // 未预加载，显示加载提示
+            Utils.showLoading();
             var loadingText = Utils.$('loading-text');
             if (loadingText) {
-              loadingText.textContent = '加载动画 ' + percent + '%';
+              loadingText.textContent = '加载动画 0%';
             }
-          });
+
+            // 预加载并创建帧
+            Animation.preloadAndCreateFrames(container, paths, function(frames) {
+              Utils.hideLoading();
+              playAnimation(frames);
+            }, function(loaded, total) {
+              var percent = Math.round(loaded / total * 100);
+              var loadingText = Utils.$('loading-text');
+              if (loadingText) {
+                loadingText.textContent = '加载动画 ' + percent + '%';
+              }
+            });
+          }
         }
       };
 
@@ -2272,14 +2331,6 @@
               State.isMusicPlaying = true;
               Utils.$('music-icon').src = '/images/campaign/design/播放按钮.png';
             }).catch(function() {});
-          }
-
-          // 后台静默预加载抽卡动画帧
-          if (!State.drawFramesPreloaded) {
-            Animation.preloadAllDrawFrames(function() {
-              State.drawFramesPreloaded = true;
-              console.log('抽卡动画帧预加载完成 (240张)');
-            });
           }
         },
 
@@ -2559,15 +2610,43 @@
           Game.updateSlots();
           Game.checkComplete();
 
-          // 预加载关键图片
+          // 预加载关键图片（最高优先级，必须先完成）
           var imagesToPreload = [
+            '/images/campaign/design/bg.png',
             '/images/campaign/design/wabao-card.png',
             '/images/campaign/design/draw-btn.png',
             '/images/campaign/design/merge-btn.png',
             '/images/campaign/design/title.png',
             '/images/campaign/design/subtitle.png'
           ];
-          Utils.preloadImages(imagesToPreload, function() {});
+          Utils.preloadImages(imagesToPreload, function() {
+            console.log('[预加载] 关键UI图片完成 (6张)');
+
+            // 关键图片加载完后，再开始预加载动画帧
+            // 按优先级串联：抽卡动画 → 结果卡片 → 骑马动画
+            if (!State.drawFramesPreloaded) {
+              Animation.preloadAllDrawFrames(function() {
+                State.drawFramesPreloaded = true;
+                console.log('[预加载] 抽卡动画帧完成 (240张)');
+
+                // 抽卡完成后加载结果卡片
+                if (!State.resultImagesPreloaded) {
+                  Animation.preloadResultImages(function() {
+                    State.resultImagesPreloaded = true;
+                    console.log('[预加载] 结果卡片完成 (5张)');
+
+                    // 结果卡片完成后加载骑马动画
+                    if (!State.horseFramesPreloaded) {
+                      Animation.preloadHorseFrames(function() {
+                        State.horseFramesPreloaded = true;
+                        console.log('[预加载] 骑马动画帧完成 (127张)');
+                      });
+                    }
+                  });
+                }
+              });
+            }
+          });
         }
       };
 
